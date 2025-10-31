@@ -2,7 +2,7 @@
 // CONFIGURATION - REPLACE WITH YOUR CREDENTIALS
 // ==========================================
 
-// Firebase Configuration - Replace with your Firebase config
+// Firebase Configuration - (you already provided one; double-check values)
 const firebaseConfig = {
     apiKey: "AIzaSyAg2SFXRGI2QvRmHWAs8P4UWoehtmGlniw",
     authDomain: "task-ko-toh.firebaseapp.com",
@@ -12,27 +12,31 @@ const firebaseConfig = {
     appId: "1:333405520584:web:cf83fb5d8aaf7b1b4d9bfd"
 };
 
-// EmailJS Configuration - Replace with your EmailJS credentials
+// EmailJS Configuration - replace placeholders with your EmailJS details
 const EMAIL_CONFIG = {
-    serviceId: 'YOUR_EMAILJS_SERVICE_ID',
-    publicKey: 'YOUR_EMAILJS_PUBLIC_KEY',
+    serviceId: 'service_5108w0i',
+    publicKey: 'sGzOV8JPW3Pr3hNX3',
     templates: {
-        overdue: 'YOUR_OVERDUE_TEMPLATE_ID',
-        upcoming: 'YOUR_UPCOMING_TEMPLATE_ID',
-        welcome: 'YOUR_WELCOME_TEMPLATE_ID'
+        overdue: 'template_ea6ejpe',
+        upcoming: 'template_p3w05gl',
     }
 };
 
 // ==========================================
-// FIREBASE INITIALIZATION
+// FIREBASE INITIALIZATION (Compat API)
 // ==========================================
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Initialize Firebase (compat)
+firebase.initializeApp(firebaseConfig);
 
-// Initialize EmailJS
-emailjs.init(EMAIL_CONFIG.publicKey);
+// Firestore & Auth (compat)
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Initialize EmailJS (public key)
+if (typeof emailjs !== 'undefined' && EMAIL_CONFIG.publicKey && EMAIL_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+    emailjs.init(EMAIL_CONFIG.publicKey);
+}
 
 // ==========================================
 // APPLICATION STATE
@@ -64,14 +68,13 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupNetworkListeners();
     setMinDateTime();
-    
-    // Show loading screen initially
+
     showLoadingScreen();
-    
-    // Firebase will handle auth state checking
+
+    // Wait a little and hide loader (auth observer will show dashboard if signed in)
     setTimeout(() => {
         hideLoadingScreen();
-    }, 2000);
+    }, 1000);
 });
 
 // ==========================================
@@ -79,13 +82,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==========================================
 
 function showLoadingScreen() {
-    loadingScreen.classList.remove('hidden');
-    authScreen.classList.add('hidden');
-    dashboardScreen.classList.add('hidden');
+    if (loadingScreen) loadingScreen.classList.remove('hidden');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (dashboardScreen) dashboardScreen.classList.add('hidden');
 }
 
 function hideLoadingScreen() {
-    loadingScreen.classList.add('hidden');
+    if (loadingScreen) loadingScreen.classList.add('hidden');
 }
 
 // ==========================================
@@ -129,10 +132,10 @@ function hideOfflineIndicator() {
 // AUTHENTICATION
 // ==========================================
 
-// Firebase Auth State Observer
+// Auth state observer
 auth.onAuthStateChanged(async (user) => {
     hideLoadingScreen();
-    
+
     if (user) {
         try {
             const userDoc = await db.collection('users').doc(user.uid).get();
@@ -146,7 +149,7 @@ auth.onAuthStateChanged(async (user) => {
                 };
                 showDashboard();
             } else {
-                // User document doesn't exist, sign out
+                // If no user doc, sign out
                 await auth.signOut();
             }
         } catch (error) {
@@ -162,18 +165,25 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 function showAuthScreen() {
-    authScreen.classList.remove('hidden');
-    dashboardScreen.classList.add('hidden');
-    document.getElementById('userGreeting').classList.add('hidden');
-    document.getElementById('logoutBtn').classList.add('hidden');
+    if (authScreen) authScreen.classList.remove('hidden');
+    if (dashboardScreen) dashboardScreen.classList.add('hidden');
+    const greeting = document.getElementById('userGreeting');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (greeting) greeting.classList.add('hidden');
+    if (logoutBtn) logoutBtn.classList.add('hidden');
 }
 
 function showDashboard() {
-    authScreen.classList.add('hidden');
-    dashboardScreen.classList.remove('hidden');
-    document.getElementById('userGreeting').textContent = `Hello, ${currentUser.name}!`;
-    document.getElementById('userGreeting').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (dashboardScreen) dashboardScreen.classList.remove('hidden');
+    const greeting = document.getElementById('userGreeting');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (greeting) {
+        greeting.textContent = `Hello, ${currentUser.name}!`;
+        greeting.classList.remove('hidden');
+    }
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
+
     loadTasks();
     setupDailyEmailCheck();
 }
@@ -184,41 +194,59 @@ function showDashboard() {
 
 function setupEventListeners() {
     // Auth form toggles
-    document.getElementById('showRegister').addEventListener('click', () => {
-        loginForm.classList.add('hidden');
-        registerForm.classList.remove('hidden');
+    const showRegisterBtn = document.getElementById('showRegister');
+    const showLoginBtn = document.getElementById('showLogin');
+    if (showRegisterBtn) showRegisterBtn.addEventListener('click', () => {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
     });
-
-    document.getElementById('showLogin').addEventListener('click', () => {
-        registerForm.classList.add('hidden');
-        loginForm.classList.remove('hidden');
+    if (showLoginBtn) showLoginBtn.addEventListener('click', () => {
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
     });
 
     // Form submissions
-    document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
-    document.getElementById('registerFormElement').addEventListener('submit', handleRegister);
-    document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
+    const loginEl = document.getElementById('loginFormElement');
+    const registerEl = document.getElementById('registerFormElement');
+    const taskForm = document.getElementById('taskForm');
+    if (loginEl) loginEl.addEventListener('submit', handleLogin);
+    if (registerEl) registerEl.addEventListener('submit', handleRegister);
+    if (taskForm) taskForm.addEventListener('submit', handleTaskSubmit);
 
-    // Button clicks
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    document.getElementById('addTaskBtn').addEventListener('click', () => openTaskModal());
-    document.getElementById('checkDeadlinesBtn').addEventListener('click', checkDeadlines);
-    document.getElementById('closeModal').addEventListener('click', closeTaskModal);
-    document.getElementById('cancelBtn').addEventListener('click', closeTaskModal);
+    // Buttons
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    if (addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal());
+
+    const checkDeadlinesBtn = document.getElementById('checkDeadlinesBtn');
+    if (checkDeadlinesBtn) checkDeadlinesBtn.addEventListener('click', checkDeadlines);
+
+    const closeModalBtn = document.getElementById('closeModal');
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeTaskModal);
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeTaskModal);
 
     // Search and filters
-    document.getElementById('searchInput').addEventListener('input', filterTasks);
-    document.getElementById('priorityFilter').addEventListener('change', filterTasks);
-    document.getElementById('statusFilter').addEventListener('change', filterTasks);
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.addEventListener('input', filterTasks);
+
+    const priorityFilter = document.getElementById('priorityFilter');
+    if (priorityFilter) priorityFilter.addEventListener('change', filterTasks);
+
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) statusFilter.addEventListener('change', filterTasks);
 
     // Modal backdrop click
-    taskModal.addEventListener('click', (e) => {
+    if (taskModal) taskModal.addEventListener('click', (e) => {
         if (e.target === taskModal) closeTaskModal();
     });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !taskModal.classList.contains('hidden')) {
+        if (e.key === 'Escape' && taskModal && !taskModal.classList.contains('hidden')) {
             closeTaskModal();
         }
         if (e.ctrlKey && e.key === 'n') {
@@ -234,7 +262,7 @@ function setupEventListeners() {
 
 async function handleLogin(e) {
     e.preventDefault();
-    
+
     if (!isOnline) {
         showToast('error', 'Offline', 'Please check your internet connection');
         return;
@@ -242,12 +270,11 @@ async function handleLogin(e) {
 
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
-    
+
     const loginBtn = document.getElementById('loginBtn');
     const loginBtnText = document.getElementById('loginBtnText');
     const loginSpinner = document.getElementById('loginSpinner');
-    
-    // Show loading state
+
     loginBtn.disabled = true;
     loginBtnText.textContent = 'Signing In...';
     loginSpinner.classList.remove('hidden');
@@ -258,7 +285,7 @@ async function handleLogin(e) {
     } catch (error) {
         console.error('Login error:', error);
         let errorMessage = 'Invalid email or password';
-        
+
         switch (error.code) {
             case 'auth/user-not-found':
                 errorMessage = 'No account found with this email';
@@ -273,10 +300,9 @@ async function handleLogin(e) {
                 errorMessage = 'Too many failed attempts. Please try again later';
                 break;
         }
-        
+
         showToast('error', 'Login Failed', errorMessage);
     } finally {
-        // Reset button state
         loginBtn.disabled = false;
         loginBtnText.textContent = 'Sign In';
         loginSpinner.classList.add('hidden');
@@ -296,7 +322,6 @@ async function handleRegister(e) {
     const grade = document.getElementById('registerGrade').value;
     const password = document.getElementById('registerPassword').value;
 
-    // Validation
     if (name.length < 2) {
         showToast('error', 'Invalid Name', 'Name must be at least 2 characters');
         return;
@@ -315,23 +340,17 @@ async function handleRegister(e) {
     const registerBtn = document.getElementById('registerBtn');
     const registerBtnText = document.getElementById('registerBtnText');
     const registerSpinner = document.getElementById('registerSpinner');
-    
-    // Show loading state
+
     registerBtn.disabled = true;
     registerBtnText.textContent = 'Creating Account...';
     registerSpinner.classList.remove('hidden');
 
     try {
-        // Create Firebase Auth user
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Update display name
-        await user.updateProfile({
-            displayName: name
-        });
+        await user.updateProfile({ displayName: name });
 
-        // Save user data to Firestore
         await db.collection('users').doc(user.uid).set({
             name: name,
             email: email,
@@ -340,20 +359,20 @@ async function handleRegister(e) {
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Send welcome email
+        // Send welcome email (if emailjs configured)
         try {
-            await sendWelcomeEmail(name, email);
+            if (EMAIL_CONFIG.publicKey && EMAIL_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+                await sendWelcomeEmail(name, email);
+            }
         } catch (emailError) {
             console.error('Welcome email failed:', emailError);
-            // Don't show error to user, just log it
         }
 
         showToast('success', 'Account Created!', 'Welcome to Task Ko To!');
-        
     } catch (error) {
         console.error('Registration error:', error);
         let errorMessage = 'Failed to create account';
-        
+
         switch (error.code) {
             case 'auth/email-already-in-use':
                 errorMessage = 'Email already registered';
@@ -365,10 +384,9 @@ async function handleRegister(e) {
                 errorMessage = 'Password is too weak';
                 break;
         }
-        
+
         showToast('error', 'Registration Failed', errorMessage);
     } finally {
-        // Reset button state
         registerBtn.disabled = false;
         registerBtnText.textContent = 'Create Account';
         registerSpinner.classList.add('hidden');
@@ -391,27 +409,27 @@ async function handleLogout() {
 
 async function loadTasks() {
     if (!currentUser || !isOnline) return;
-    
+
     try {
         const snapshot = await db.collection('tasks')
             .where('userId', '==', currentUser.id)
             .orderBy('dueDate', 'asc')
             .get();
-        
+
         tasks = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 ...data,
-                dueDate: data.dueDate.toDate().toISOString().slice(0, 16),
+                // store ISO strings for consistent rendering
+                dueDate: data.dueDate ? data.dueDate.toDate().toISOString() : new Date().toISOString(),
                 createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
                 completedAt: data.completedAt ? data.completedAt.toDate().toISOString() : null
             };
         });
-        
+
         renderTasks();
         updateStatistics();
-        
     } catch (error) {
         console.error('Error loading tasks:', error);
         showToast('error', 'Load Failed', 'Could not load tasks');
@@ -420,56 +438,58 @@ async function loadTasks() {
 
 async function handleTaskSubmit(e) {
     e.preventDefault();
-    
+
     if (!isOnline) {
         showToast('error', 'Offline', 'Please check your internet connection');
         return;
     }
-    
+
     const taskSubmitBtn = document.getElementById('taskSubmitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
     const taskSubmitSpinner = document.getElementById('taskSubmitSpinner');
-    
-    // Show loading state
+
     taskSubmitBtn.disabled = true;
     submitBtnText.textContent = editingTaskId ? 'Updating...' : 'Adding...';
     taskSubmitSpinner.classList.remove('hidden');
-    
+
+    const title = document.getElementById('taskTitle').value.trim();
+    const description = document.getElementById('taskDescription').value.trim();
+    const subject = document.getElementById('taskSubject').value.trim();
+    const dueDateRaw = document.getElementById('taskDueDate').value;
+    const priority = document.getElementById('taskPriority').value;
+
+    const dueDateTimestamp = firebase.firestore.Timestamp.fromDate(new Date(dueDateRaw));
+
     const taskData = {
         userId: currentUser.id,
-        title: document.getElementById('taskTitle').value.trim(),
-        description: document.getElementById('taskDescription').value.trim(),
-        subject: document.getElementById('taskSubject').value.trim(),
-        dueDate: firebase.firestore.Timestamp.fromDate(new Date(document.getElementById('taskDueDate').value)),
-        priority: document.getElementById('taskPriority').value,
-        status: editingTaskId ? undefined : 'pending', // Don't override status when editing
+        title,
+        description,
+        subject,
+        dueDate: dueDateTimestamp,
+        priority,
+        status: editingTaskId ? undefined : 'pending',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    
-    // Only set createdAt for new tasks
+
     if (!editingTaskId) {
         taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     }
 
     try {
         if (editingTaskId) {
-            // Update existing task
             await db.collection('tasks').doc(editingTaskId).update(taskData);
             showToast('success', 'Task Updated!', 'Your task has been updated successfully');
         } else {
-            // Create new task
             await db.collection('tasks').add(taskData);
             showToast('success', 'Task Added!', 'Your new task has been created');
         }
 
-        await loadTasks(); // Reload from database
+        await loadTasks();
         closeTaskModal();
-        
     } catch (error) {
         console.error('Error saving task:', error);
         showToast('error', 'Save Failed', 'Could not save task');
     } finally {
-        // Reset button state
         taskSubmitBtn.disabled = false;
         submitBtnText.textContent = editingTaskId ? 'Update Task' : 'Add Task';
         taskSubmitSpinner.classList.add('hidden');
@@ -478,12 +498,12 @@ async function handleTaskSubmit(e) {
 
 async function deleteTask(taskId) {
     if (!confirm('Are you sure you want to delete this task?')) return;
-    
+
     if (!isOnline) {
         showToast('error', 'Offline', 'Please check your internet connection');
         return;
     }
-    
+
     try {
         await db.collection('tasks').doc(taskId).delete();
         showToast('info', 'Task Deleted', 'Task has been removed');
@@ -499,11 +519,11 @@ async function toggleTaskStatus(taskId) {
     if (!task || !isOnline) return;
 
     const newStatus = task.status === 'pending' ? 'completed' : 'pending';
-    const updateData = { 
+    const updateData = {
         status: newStatus,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    
+
     if (newStatus === 'completed') {
         updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
     } else {
@@ -526,50 +546,55 @@ function editTask(taskId) {
         editingTaskId = taskId;
         document.getElementById('modalTitle').textContent = 'Edit Task';
         document.getElementById('submitBtnText').textContent = 'Update Task';
-        
-        // Populate form
+
         document.getElementById('taskTitle').value = task.title;
         document.getElementById('taskDescription').value = task.description || '';
         document.getElementById('taskSubject').value = task.subject;
-        document.getElementById('taskDueDate').value = task.dueDate;
-        document.getElementById('taskPriority').value = task.priority;
-        
+        // Ensure input value format compatible with datetime-local if needed
+        document.getElementById('taskDueDate').value = task.dueDate.slice(0, 16);
+        document.getElementById('taskPriority').value = task.priority || '';
+
         openTaskModal();
     }
 }
 
 // ==========================================
-// MODAL FUNCTIONS
+// MODAL
 // ==========================================
 
 function openTaskModal() {
-    taskModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    document.getElementById('taskTitle').focus();
+    if (taskModal) {
+        taskModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        document.getElementById('taskTitle').focus();
+    }
 }
 
 function closeTaskModal() {
-    taskModal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-    document.getElementById('taskForm').reset();
+    if (taskModal) {
+        taskModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    const form = document.getElementById('taskForm');
+    if (form) form.reset();
     editingTaskId = null;
     document.getElementById('modalTitle').textContent = 'Add New Task';
     document.getElementById('submitBtnText').textContent = 'Add Task';
-    
-    // Reset button state
     const taskSubmitBtn = document.getElementById('taskSubmitBtn');
     const taskSubmitSpinner = document.getElementById('taskSubmitSpinner');
-    taskSubmitBtn.disabled = false;
-    taskSubmitSpinner.classList.add('hidden');
+    if (taskSubmitBtn) taskSubmitBtn.disabled = false;
+    if (taskSubmitSpinner) taskSubmitSpinner.classList.add('hidden');
 }
 
 // ==========================================
-// RENDERING FUNCTIONS
+// RENDERING
 // ==========================================
 
 function renderTasks() {
     const filteredTasks = getFilteredTasks();
-    
+
+    if (!tasksContainer) return;
+
     if (filteredTasks.length === 0) {
         tasksContainer.classList.add('hidden');
         emptyState.classList.remove('hidden');
@@ -589,16 +614,16 @@ function renderTasks() {
             <div class="task-card bg-white rounded-xl shadow-sm border border-gray-200 p-6 priority-${task.priority} fade-in">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${task.title}</h3>
-                        <p class="text-sm text-gray-600 mb-2">${task.subject}</p>
-                        ${task.description ? `<p class="text-sm text-gray-500 mb-3">${task.description}</p>` : ''}
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h3>
+                        <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.subject)}</p>
+                        ${task.description ? `<p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p>` : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full priority-badge-${task.priority}">
-                            ${task.priority.toUpperCase()}
+                            ${escapeHtml(task.priority.toUpperCase())}
                         </span>
                         <span class="px-2 py-1 text-xs font-medium rounded-full status-${task.status} ${isOverdue ? 'status-overdue' : ''}">
-                            ${isOverdue ? 'OVERDUE' : task.status.toUpperCase()}
+                            ${isOverdue ? 'OVERDUE' : escapeHtml(task.status.toUpperCase())}
                         </span>
                     </div>
                 </div>
@@ -632,19 +657,33 @@ function renderTasks() {
     }).join('');
 }
 
+// Helper to avoid XSS in inserted HTML
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+}
+
 // ==========================================
-// FILTER AND SEARCH FUNCTIONS
+// FILTERS
 // ==========================================
 
 function getFilteredTasks() {
     let filtered = [...tasks];
-    
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-    const priorityFilter = document.getElementById('priorityFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
+
+    const searchTermEl = document.getElementById('searchInput');
+    const searchTerm = searchTermEl ? searchTermEl.value.toLowerCase().trim() : '';
+    const priorityFilterEl = document.getElementById('priorityFilter');
+    const priorityFilter = priorityFilterEl ? priorityFilterEl.value : '';
+    const statusFilterEl = document.getElementById('statusFilter');
+    const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
     if (searchTerm) {
-        filtered = filtered.filter(task => 
+        filtered = filtered.filter(task =>
             task.title.toLowerCase().includes(searchTerm) ||
             (task.description && task.description.toLowerCase().includes(searchTerm)) ||
             task.subject.toLowerCase().includes(searchTerm)
@@ -660,7 +699,6 @@ function getFilteredTasks() {
     }
 
     return filtered.sort((a, b) => {
-        // Sort by status first (pending first), then by due date
         if (a.status !== b.status) {
             return a.status === 'pending' ? -1 : 1;
         }
@@ -673,7 +711,7 @@ function filterTasks() {
 }
 
 // ==========================================
-// STATISTICS FUNCTIONS
+// STATISTICS
 // ==========================================
 
 function updateStatistics() {
@@ -685,14 +723,19 @@ function updateStatistics() {
         return dueDate < new Date() && t.status === 'pending';
     }).length;
 
-    document.getElementById('totalTasks').textContent = total;
-    document.getElementById('completedTasks').textContent = completed;
-    document.getElementById('pendingTasks').textContent = pending;
-    document.getElementById('overdueTasks').textContent = overdue;
+    const totalEl = document.getElementById('totalTasks');
+    const completedEl = document.getElementById('completedTasks');
+    const pendingEl = document.getElementById('pendingTasks');
+    const overdueEl = document.getElementById('overdueTasks');
+
+    if (totalEl) totalEl.textContent = total;
+    if (completedEl) completedEl.textContent = completed;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (overdueEl) overdueEl.textContent = overdue;
 }
 
 // ==========================================
-// EMAIL NOTIFICATION FUNCTIONS
+// EMAIL NOTIFICATIONS (EmailJS)
 // ==========================================
 
 async function checkDeadlines() {
@@ -702,78 +745,86 @@ async function checkDeadlines() {
     }
 
     const button = document.getElementById('checkDeadlinesBtn');
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner loading mr-2"></i>Sending...';
-    button.disabled = true;
+    const originalText = button ? button.innerHTML : '';
+    if (button) {
+        button.innerHTML = '<i class="fas fa-spinner loading mr-2"></i>Sending...';
+        button.disabled = true;
+    }
 
     try {
         const urgentTasks = getUrgentTasks();
         let emailsSent = 0;
-        
-        if (urgentTasks.overdue.length > 0) {
+
+        if (urgentTasks.overdue.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
             await sendOverdueEmail(urgentTasks.overdue);
             emailsSent++;
         }
-        
-        if (urgentTasks.upcoming.length > 0) {
+
+        if (urgentTasks.upcoming.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
             await sendUpcomingEmail(urgentTasks.upcoming);
             emailsSent++;
         }
-        
+
         if (emailsSent > 0) {
             showToast('success', 'Emails Sent!', `${emailsSent} notification email(s) sent to ${currentUser.email}`);
         } else {
-            showToast('success', 'All Good!', 'No urgent deadlines found');
+            showToast('success', 'All Good!', 'No urgent deadlines found or EmailJS not configured');
         }
-        
+
     } catch (error) {
         console.error('Email sending failed:', error);
         showToast('error', 'Email Failed', 'Could not send email notifications');
     } finally {
-        button.innerHTML = originalText;
-        button.disabled = false;
+        if (button) {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
     }
 }
 
 async function sendOverdueEmail(overdueTasks) {
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.overdue) return;
+
     const templateParams = {
         to_name: currentUser.name,
         to_email: currentUser.email,
         overdue_count: overdueTasks.length,
-        task_list: overdueTasks.map(task => 
+        task_list: overdueTasks.map(task =>
             `• ${task.title} (${task.subject}) - Due: ${formatDateTime(task.dueDate)}`
         ).join('\n'),
         user_grade: `Grade ${currentUser.grade}`
     };
 
-    await emailjs.send(
+    return emailjs.send(
         EMAIL_CONFIG.serviceId,
         EMAIL_CONFIG.templates.overdue,
-        templateParams,
-        EMAIL_CONFIG.publicKey
+        templateParams
     );
 }
 
 async function sendUpcomingEmail(upcomingTasks) {
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.upcoming) return;
+
     const templateParams = {
         to_name: currentUser.name,
         to_email: currentUser.email,
         upcoming_count: upcomingTasks.length,
-        task_list: upcomingTasks.map(task => 
+        task_list: upcomingTasks.map(task =>
             `• ${task.title} (${task.subject}) - Due: ${formatDateTime(task.dueDate)}`
         ).join('\n'),
         user_grade: `Grade ${currentUser.grade}`
     };
 
-    await emailjs.send(
+    return emailjs.send(
         EMAIL_CONFIG.serviceId,
         EMAIL_CONFIG.templates.upcoming,
-        templateParams,
-        EMAIL_CONFIG.publicKey
+        templateParams
     );
 }
 
 async function sendWelcomeEmail(name, email) {
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.welcome) return;
+
     const templateParams = {
         to_name: name,
         to_email: email,
@@ -781,11 +832,10 @@ async function sendWelcomeEmail(name, email) {
         login_url: window.location.origin
     };
 
-    await emailjs.send(
+    return emailjs.send(
         EMAIL_CONFIG.serviceId,
         EMAIL_CONFIG.templates.welcome,
-        templateParams,
-        EMAIL_CONFIG.publicKey
+        templateParams
     );
 }
 
@@ -795,7 +845,7 @@ function getUrgentTasks() {
         if (task.status === 'completed') return false;
         const dueDate = new Date(task.dueDate);
         const timeDiff = dueDate - now;
-        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // Due within 24 hours
+        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000;
     });
 
     const overdueTasks = tasks.filter(task => {
@@ -807,20 +857,17 @@ function getUrgentTasks() {
     return { upcoming: upcomingTasks, overdue: overdueTasks };
 }
 
-// Auto-check deadlines daily
 function setupDailyEmailCheck() {
-    // Check every hour for urgent tasks (in production, you might want to do this less frequently)
     setInterval(() => {
         const urgentTasks = getUrgentTasks();
         if (urgentTasks.overdue.length > 0 || urgentTasks.upcoming.length > 0) {
-            // You could automatically send emails here, but it's better to let users control this
             console.log('Urgent tasks detected:', urgentTasks);
         }
-    }, 60 * 60 * 1000); // Check every hour
+    }, 60 * 60 * 1000);
 }
 
 // ==========================================
-// UTILITY FUNCTIONS
+// UTILITIES
 // ==========================================
 
 function formatDateTime(dateTimeString) {
@@ -838,7 +885,8 @@ function formatDateTime(dateTimeString) {
 function setMinDateTime() {
     const now = new Date();
     const minDateTime = now.toISOString().slice(0, 16);
-    document.getElementById('taskDueDate').min = minDateTime;
+    const el = document.getElementById('taskDueDate');
+    if (el) el.min = minDateTime;
 }
 
 function showToast(type, title, message) {
@@ -846,6 +894,8 @@ function showToast(type, title, message) {
     const toastIcon = document.getElementById('toastIcon');
     const toastTitle = document.getElementById('toastTitle');
     const toastMessage = document.getElementById('toastMessage');
+
+    if (!toast || !toastIcon || !toastTitle || !toastMessage) return;
 
     const icons = {
         success: '<i class="fas fa-check-circle text-green-500"></i>',
@@ -859,15 +909,14 @@ function showToast(type, title, message) {
     toastMessage.textContent = message;
 
     toast.style.transform = 'translateX(0)';
-    
-    // Auto-hide after 5 seconds
+
     setTimeout(() => {
         toast.style.transform = 'translateX(100%)';
     }, 5000);
 }
 
 // ==========================================
-// ERROR HANDLING
+// GLOBAL ERROR HANDLING
 // ==========================================
 
 window.addEventListener('error', (event) => {
