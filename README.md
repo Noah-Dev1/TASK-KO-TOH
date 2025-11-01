@@ -17,7 +17,7 @@ This project is part of our ICT Research and Capstone under the title:
 ## Live 
 
 Deployed on Vercel:  
-[https://taskkoto.vercel.app](https://taskkoto.vercel.app)  
+https://task-ko-toh.vercel.app/
 
 
 ---
