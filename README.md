@@ -39,7 +39,7 @@ https://task-ko-toh.vercel.app/
 |-------------|----------|
 | HTML | Structure of the web app |
 | CSS | Styling and layout |
-| JavaScript (Vanilla) | App logic and interactivity |
+| JavaScript  | App logic and interactivity |
 | Firebase Firestore | Database to store tasks |
 | EmailJS | Sends reminder and welcome emails |
 | Vercel | Deployment and hosting |
