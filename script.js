@@ -1,8 +1,8 @@
-// ==========================================
-// CONFIGURATION - REPLACE WITH YOUR CREDENTIALS
-// ==========================================
+// =========================================
+// CONFIGURATION 
+// =========================================
 
-// Firebase Configuration - (you already provided one; double-check values)
+// Firebase Configuration - 
 const firebaseConfig = {
     apiKey: "AIzaSyAg2SFXRGI2QvRmHWAs8P4UWoehtmGlniw",
     authDomain: "task-ko-toh.firebaseapp.com",
@@ -12,14 +12,13 @@ const firebaseConfig = {
     appId: "1:333405520584:web:cf83fb5d8aaf7b1b4d9bfd"
 };
 
-// EmailJS Configuration - replace placeholders with your EmailJS details
+// EmailJS Configuration 
 const EMAIL_CONFIG = {
-    serviceId: 'YOUR_EMAILJS_SERVICE_ID',
-    publicKey: 'YOUR_EMAILJS_PUBLIC_KEY',
+    serviceId: 'service_5108w0i',
+    publicKey: 'sGzOV8JPW3Pr3hNX3',
     templates: {
-        overdue: 'YOUR_OVERDUE_TEMPLATE_ID',
-        upcoming: 'YOUR_UPCOMING_TEMPLATE_ID',
-        welcome: 'YOUR_WELCOME_TEMPLATE_ID'
+        overdue: 'template_ea6ejpe',
+        upcoming: 'template_p3w05gl',
     }
 };
 
