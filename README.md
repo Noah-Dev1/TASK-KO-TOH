@@ -18,7 +18,7 @@ This project is part of our ICT Research and Capstone under the title:
 
 Deployed on Vercel:  
 [https://taskkoto.vercel.app](https://taskkoto.vercel.app)  
-(Replace this link with your actual deployment URL once live.)
+
 
 ---
 
@@ -44,12 +44,3 @@ Deployed on Vercel:
 | EmailJS | Sends reminder and welcome emails |
 | Vercel | Deployment and hosting |
 
----
-
-## Installation and Setup
-
-Follow these steps to run TaskKoTo locally before deploying to Vercel:
-
-1. **Clone this repository**
-   ```bash
-   git clone https://github.com/YOUR-GITHUB-USERNAME/taskkoto.git
