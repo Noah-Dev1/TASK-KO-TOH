@@ -1,301 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Task Ko To! - School Work Reminder</title>
-
-    <!-- Tailwind CSS (CDN for development) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Firebase SDKs (Compat versions) -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-
-    <!-- EmailJS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-
-    <!-- Custom CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskKoTo! - School Work Reminder</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-Vn1+38+Y1m6RQI6lQjOjzNq+oF+V9Y6C6C9i8PC9EM7w9c5W0frc/HRGq1k19PvTuzD9gZy2Jp6t6lYcdFm4g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
+
     <!-- Loading Screen -->
-    <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
-        <div class="text-center">
-            <i class="fas fa-graduation-cap text-indigo-600 text-6xl mb-4 animate-pulse"></i>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Task Ko To!</h2>
-            <div class="flex items-center justify-center space-x-1">
-                <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-            </div>
+    <div id="loadingScreen" class="loading-screen hidden">
+        <div class="spinner"></div>
+        <p>Loading TaskKoTo...</p>
+    </div>
+
+    <!-- Authentication Screen -->
+    <div id="authScreen" class="auth-screen hidden">
+        <div class="auth-container">
+            <h2>Welcome to TaskKoTo!</h2>
+
+            <!-- Login Form -->
+            <form id="loginFormElement" class="login-form">
+                <h3>Sign In</h3>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit" id="loginBtn">
+                    <span id="loginBtnText">Sign In</span>
+                    <span id="loginSpinner" class="spinner hidden"></span>
+                </button>
+                <p>Don't have an account? <button type="button" id="showRegister">Register</button></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerFormElement" class="register-form hidden">
+                <h3>Create Account</h3>
+                <input type="text" id="registerName" placeholder="Full Name" required>
+                <input type="email" id="registerEmail" placeholder="Email" required>
+                <select id="registerGrade" required>
+                    <option value="">Select Grade</option>
+                    <option value="11">Grade 11</option>
+                    <option value="12">Grade 12</option>
+                </select>
+                <input type="password" id="registerPassword" placeholder="Password" required>
+                <button type="submit" id="registerBtn">
+                    <span id="registerBtnText">Create Account</span>
+                    <span id="registerSpinner" class="spinner hidden"></span>
+                </button>
+                <p>Already have an account? <button type="button" id="showLogin">Login</button></p>
+            </form>
         </div>
     </div>
 
-    <!-- Navigation Bar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <i class="fas fa-graduation-cap text-indigo-600 text-2xl mr-3"></i>
-                    <h1 class="text-xl font-bold text-gray-900">Task Ko To!</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span id="userGreeting" class="text-gray-700 hidden"></span>
-                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors hidden">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
-                </div>
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="dashboard-screen hidden">
+        <header>
+            <h1>TaskKoTo!</h1>
+            <div>
+                <span id="userGreeting"></span>
+                <button id="logoutBtn" class="hidden">Logout</button>
             </div>
-        </div>
-    </nav>
+        </header>
 
-    <!-- Main Content -->
-    <main class="pt-16">
-        <!-- Login/Register Screen -->
-        <div id="authScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-cyan-50 hidden">
-            <div class="max-w-md w-full mx-4">
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <div class="text-center mb-8">
-                        <i class="fas fa-graduation-cap text-indigo-600 text-4xl mb-4"></i>
-                        <h2 class="text-3xl font-bold text-gray-900">Task Ko To!</h2>
-                        <p class="text-gray-600 mt-2">Your School Work Reminder</p>
-                    </div>
-
-                    <!-- Login Form -->
-                    <div id="loginForm">
-                        <h3 class="text-xl font-semibold mb-4">Welcome Back</h3>
-                        <form id="loginFormElement">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Email</label>
-                                <input type="email" id="loginEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            </div>
-                            <div class="mb-6">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
-                                <input type="password" id="loginPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            </div>
-                            <button type="submit" id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <span id="loginBtnText">Sign In</span>
-                                <i id="loginSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
-                            </button>
-                        </form>
-                        <p class="text-center mt-4 text-gray-600">
-                            Don't have an account? 
-                            <button id="showRegister" class="text-indigo-600 hover:text-indigo-700 font-medium">Sign up</button>
-                        </p>
-                    </div>
-
-                    <!-- Register Form -->
-                    <div id="registerForm" class="hidden">
-                        <h3 class="text-xl font-semibold mb-4">Create Account</h3>
-                        <form id="registerFormElement">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
-                                <input type="text" id="registerName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Email</label>
-                                <input type="email" id="registerEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Grade Level</label>
-                                <select id="registerGrade" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                                    <option value="">Select Grade</option>
-                                    <option value="11">Grade 11</option>
-                                    <option value="12">Grade 12</option>
-                                </select>
-                            </div>
-                            <div class="mb-6">
-                                <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
-                                <input type="password" id="registerPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required minlength="6">
-                                <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-                            </div>
-                            <button type="submit" id="registerBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <span id="registerBtnText">Create Account</span>
-                                <i id="registerSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
-                            </button>
-                        </form>
-                        <p class="text-center mt-4 text-gray-600">
-                            Already have an account? 
-                            <button id="showLogin" class="text-indigo-600 hover:text-indigo-700 font-medium">Sign in</button>
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <!-- Statistics -->
+        <div class="stats">
+            <div>Total Tasks: <span id="totalTasks">0</span></div>
+            <div>Completed: <span id="completedTasks">0</span></div>
+            <div>Pending: <span id="pendingTasks">0</span></div>
+            <div>Overdue: <span id="overdueTasks">0</span></div>
         </div>
 
-        <!-- Dashboard Screen -->
-        <div id="dashboardScreen" class="hidden">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <!-- Dashboard Header -->
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Dashboard</h2>
-                    <p class="text-gray-600">Manage your school tasks and stay on top of deadlines</p>
-                </div>
-
-                <!-- Statistics Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-indigo-100">
-                                <i class="fas fa-tasks text-indigo-600 text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-600">Total Tasks</p>
-                                <p id="totalTasks" class="text-2xl font-bold text-gray-900">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-green-100">
-                                <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-600">Completed</p>
-                                <p id="completedTasks" class="text-2xl font-bold text-gray-900">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-amber-100">
-                                <i class="fas fa-clock text-amber-600 text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-600">Pending</p>
-                                <p id="pendingTasks" class="text-2xl font-bold text-gray-900">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-red-100">
-                                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-600">Overdue</p>
-                                <p id="overdueTasks" class="text-2xl font-bold text-gray-900">0</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Controls -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Task
-                            </button>
-                            <button id="checkDeadlinesBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                                <i class="fas fa-bell mr-2"></i>Send Email Reminders
-                            </button>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <input type="text" id="searchInput" placeholder="Search tasks..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <select id="priorityFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">All Priorities</option>
-                                <option value="high">High Priority</option>
-                                <option value="medium">Medium Priority</option>
-                                <option value="low">Low Priority</option>
-                            </select>
-                            <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tasks Container -->
-                <div id="tasksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Tasks will be dynamically inserted here -->
-                </div>
-
-                <!-- Empty State -->
-                <div id="emptyState" class="text-center py-12 hidden">
-                    <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
-                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No tasks found</h3>
-                    <p class="text-gray-500 mb-6">Create your first task to get started!</p>
-                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors" onclick="openTaskModal()">
-                        <i class="fas fa-plus mr-2"></i>Add Your First Task
-                    </button>
-                </div>
-            </div>
+        <!-- Task Controls -->
+        <div class="task-controls">
+            <button id="addTaskBtn">Add Task</button>
+            <button id="checkDeadlinesBtn">Check Deadlines</button>
+            <input type="text" id="searchInput" placeholder="Search tasks...">
+            <select id="priorityFilter">
+                <option value="">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+            <select id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+            </select>
         </div>
-    </main>
+
+        <!-- Tasks Container -->
+        <div id="tasksContainer" class="tasks-container"></div>
+        <div id="emptyState" class="empty-state hidden">
+            <p>No tasks found.</p>
+        </div>
+    </div>
 
     <!-- Task Modal -->
-    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 id="modalTitle" class="text-xl font-semibold text-gray-900">Add New Task</h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-xl">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form id="taskForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Task Title</label>
-                        <input type="text" id="taskTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Description</label>
-                        <textarea id="taskDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Subject</label>
-                        <input type="text" id="taskSubject" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Due Date</label>
-                        <input type="datetime-local" id="taskDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-medium mb-2">Priority</label>
-                        <select id="taskPriority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            <option value="">Select Priority</option>
-                            <option value="high">High Priority</option>
-                            <option value="medium">Medium Priority</option>
-                            <option value="low">Low Priority</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-3">
-                        <button type="submit" id="taskSubmitBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            <span id="submitBtnText">Add Task</span>
-                            <i id="taskSubmitSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
-                        </button>
-                        <button type="button" id="cancelBtn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <div id="taskModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modalTitle">Add New Task</h3>
+            <form id="taskForm">
+                <input type="text" id="taskTitle" placeholder="Task Title" required>
+                <input type="text" id="taskSubject" placeholder="Subject" required>
+                <textarea id="taskDescription" placeholder="Description"></textarea>
+                <input type="datetime-local" id="taskDueDate" required>
+                <select id="taskPriority" required>
+                    <option value="">Select Priority</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                <button type="submit" id="taskSubmitBtn">
+                    <span id="submitBtnText">Add Task</span>
+                    <span id="taskSubmitSpinner" class="spinner hidden"></span>
+                </button>
+                <button type="button" id="cancelBtn">Cancel</button>
+            </form>
+            <button id="closeModal" class="modal-close">&times;</button>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed top-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300 z-50">
-        <div class="flex items-center">
-            <div id="toastIcon" class="mr-3"></div>
-            <div>
-                <p id="toastTitle" class="font-medium text-gray-900"></p>
-                <p id="toastMessage" class="text-sm text-gray-600"></p>
-            </div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div id="toastIcon"></div>
+        <div>
+            <strong id="toastTitle"></strong>
+            <p id="toastMessage"></p>
         </div>
     </div>
 
-    <!-- Custom JavaScript -->
-    <script src="script.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- EmailJS -->
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
+    <!-- Main Script -->
+    <script src="script.js" defer></script>
+
 </body>
 </html>
