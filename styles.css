@@ -1,9 +1,22 @@
+/* =======================
+   GLOBAL STYLES
+   ======================= */
 body {
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
+    margin: 0;
+    background-color: #f9fafb;
+    color: #1f2937;
 }
 
-/* Task Card Animations */
+/* Hidden utility */
+.hidden {
+    display: none !important;
+}
+
+/* =======================
+   TASK CARD ANIMATIONS
+   ======================= */
 .task-card {
     transition: all 0.3s ease;
 }
@@ -26,7 +39,9 @@ body {
     border-left: 4px solid #10B981;
 }
 
-/* Modal Backdrop */
+/* =======================
+   MODAL BACKDROP
+   ======================= */
 .modal-backdrop {
     backdrop-filter: blur(4px);
 }
@@ -47,21 +62,21 @@ body {
     }
 }
 
-/* Loading Spinner */
+/* =======================
+   LOADING SPINNER
+   ======================= */
 .loading {
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* Status Badges */
+/* =======================
+   STATUS BADGES
+   ======================= */
 .status-pending {
     background-color: #dbeafe;
     color: #1e40af;
@@ -77,7 +92,7 @@ body {
     color: #dc2626;
 }
 
-/* Priority Badges */
+/* PRIORITY BADGES */
 .priority-badge-high {
     background-color: #fee2e2;
     color: #dc2626;
@@ -93,18 +108,59 @@ body {
     color: #16a34a;
 }
 
-/* Toast Notification */
+/* =======================
+   TOAST NOTIFICATION
+   ======================= */
 #toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
     min-width: 300px;
     max-width: 400px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    transform: translateX(100%);
+    transition: transform 0.5s ease;
+    z-index: 2000;
 }
 
-/* Loading Screen */
+#toastIcon {
+    margin-right: 12px;
+    font-size: 1.5rem;
+}
+
+/* =======================
+   LOADING SCREEN
+   ======================= */
 #loadingScreen {
+    position: fixed;
+    inset: 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    z-index: 1000;
 }
 
-/* Offline Indicator */
+#loadingScreen .spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+/* =======================
+   OFFLINE INDICATOR
+   ======================= */
 .offline-indicator {
     position: fixed;
     bottom: 20px;
@@ -123,8 +179,15 @@ body {
     transform: translateY(0);
 }
 
-/* Button Hover Effects */
+/* =======================
+   BUTTONS
+   ======================= */
 button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
     transition: all 0.2s ease;
 }
 
@@ -139,17 +202,20 @@ button:active {
 button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
 }
 
-/* Responsive Design */
+/* =======================
+   RESPONSIVE
+   ======================= */
 @media (max-width: 768px) {
     .task-card {
         margin-bottom: 1rem;
     }
     
     #tasksContainer {
+        display: grid;
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
     .max-w-7xl {
@@ -158,12 +224,9 @@ button:disabled {
     }
 }
 
-/* Additional Utility Classes */
-.line-through {
-    text-decoration: line-through;
-}
-
-/* Custom Scrollbar */
+/* =======================
+   SCROLLBAR
+   ======================= */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -182,7 +245,9 @@ button:disabled {
     background: #a8a8a8;
 }
 
-/* Focus States */
+/* =======================
+   FORM FOCUS
+   ======================= */
 input:focus,
 textarea:focus,
 select:focus {
@@ -191,7 +256,9 @@ select:focus {
     border-color: #6366f1;
 }
 
-/* Form Validation */
+/* =======================
+   FORM VALIDATION
+   ======================= */
 input:invalid {
     border-color: #ef4444;
 }
@@ -200,7 +267,9 @@ input:valid {
     border-color: #10b981;
 }
 
-/* Loading States */
+/* =======================
+   BUTTON LOADING
+   ======================= */
 .btn-loading {
     position: relative;
     color: transparent;
@@ -221,7 +290,9 @@ input:valid {
     animation: spin 1s linear infinite;
 }
 
-/* Card Hover Effects */
+/* =======================
+   CARD HOVER EFFECT
+   ======================= */
 .card-hover {
     transition: all 0.3s ease;
 }
@@ -231,37 +302,24 @@ input:valid {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* Gradient Backgrounds */
-.gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+/* =======================
+   GRADIENT BACKGROUNDS
+   ======================= */
+.gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.gradient-success { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+.gradient-warning { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+.gradient-danger  { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
 
-.gradient-success {
-    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-}
+/* =======================
+   ANIMATION DELAYS
+   ======================= */
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
 
-.gradient-warning {
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-}
-
-.gradient-danger {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-}
-
-/* Animation Delays */
-.animate-delay-100 {
-    animation-delay: 0.1s;
-}
-
-.animate-delay-200 {
-    animation-delay: 0.2s;
-}
-
-.animate-delay-300 {
-    animation-delay: 0.3s;
-}
-
-/* Text Animations */
+/* =======================
+   TEXT SHIMMER
+   ======================= */
 .text-shimmer {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
@@ -269,30 +327,16 @@ input:valid {
 }
 
 @keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
 
-/* Dark Mode Support (Optional) */
-@media (prefers-color-scheme: dark) {
-    /* Add dark mode styles here if needed */
-}
-
-/* Print Styles */
+/* =======================
+   PRINT STYLES
+   ======================= */
 @media print {
-    .no-print {
-        display: none !important;
-    }
-    
-    body {
-        background: white !important;
-        color: black !important;
-    }
-    
+    .no-print { display: none !important; }
+    body { background: white !important; color: black !important; }
     .task-card {
         break-inside: avoid;
         border: 1px solid #ccc !important;
