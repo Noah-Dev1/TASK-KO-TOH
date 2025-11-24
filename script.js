@@ -1,3 +1,8 @@
+// =========================================
+// CONFIGURATION 
+// =========================================
+
+// Firebase Configuration - 
 const firebaseConfig = {
     apiKey: "AIzaSyAg2SFXRGI2QvRmHWAs8P4UWoehtmGlniw",
     authDomain: "task-ko-toh.firebaseapp.com",
@@ -7,6 +12,7 @@ const firebaseConfig = {
     appId: "1:333405520584:web:cf83fb5d8aaf7b1b4d9bfd"
 };
 
+// EmailJS Configuration 
 const EMAIL_CONFIG = {
     serviceId: 'service_5108w0i',
     publicKey: 'sGzOV8JPW3Pr3hNX3',
@@ -16,18 +22,34 @@ const EMAIL_CONFIG = {
     }
 };
 
+// ==========================================
+// FIREBASE INITIALIZATION (Compat API)
+// ==========================================
+
+// Initialize Firebase (compat)
 firebase.initializeApp(firebaseConfig);
+
+// Firestore & Auth (compat)
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-if (typeof emailjs !== 'undefined' && EMAIL_CONFIG.publicKey) {
+// Initialize EmailJS (public key)
+if (typeof emailjs !== 'undefined' && EMAIL_CONFIG.publicKey && EMAIL_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
     emailjs.init(EMAIL_CONFIG.publicKey);
 }
+
+// ==========================================
+// APPLICATION STATE
+// ==========================================
 
 let currentUser = null;
 let tasks = [];
 let editingTaskId = null;
 let isOnline = navigator.onLine;
+
+// ==========================================
+// DOM ELEMENTS
+// ==========================================
 
 const loadingScreen = document.getElementById('loadingScreen');
 const authScreen = document.getElementById('authScreen');
@@ -38,13 +60,26 @@ const taskModal = document.getElementById('taskModal');
 const tasksContainer = document.getElementById('tasksContainer');
 const emptyState = document.getElementById('emptyState');
 
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupNetworkListeners();
     setMinDateTime();
+
     showLoadingScreen();
-    setTimeout(() => hideLoadingScreen(), 1000);
+
+    // Wait a little and hide loader (auth observer will show dashboard if signed in)
+    setTimeout(() => {
+        hideLoadingScreen();
+    }, 1000);
 });
+
+// ==========================================
+// LOADING SCREEN
+// ==========================================
 
 function showLoadingScreen() {
     if (loadingScreen) loadingScreen.classList.remove('hidden');
@@ -56,12 +91,17 @@ function hideLoadingScreen() {
     if (loadingScreen) loadingScreen.classList.add('hidden');
 }
 
+// ==========================================
+// NETWORK MONITORING
+// ==========================================
+
 function setupNetworkListeners() {
     window.addEventListener('online', () => {
         isOnline = true;
         hideOfflineIndicator();
         showToast('success', 'Back Online', 'Connection restored');
     });
+
     window.addEventListener('offline', () => {
         isOnline = false;
         showOfflineIndicator();
@@ -83,11 +123,19 @@ function showOfflineIndicator() {
 
 function hideOfflineIndicator() {
     const indicator = document.getElementById('offlineIndicator');
-    if (indicator) indicator.classList.remove('show');
+    if (indicator) {
+        indicator.classList.remove('show');
+    }
 }
 
+// ==========================================
+// AUTHENTICATION
+// ==========================================
+
+// Auth state observer
 auth.onAuthStateChanged(async (user) => {
     hideLoadingScreen();
+
     if (user) {
         try {
             const userDoc = await db.collection('users').doc(user.uid).get();
@@ -101,6 +149,7 @@ auth.onAuthStateChanged(async (user) => {
                 };
                 showDashboard();
             } else {
+                // If no user doc, sign out
                 await auth.signOut();
             }
         } catch (error) {
@@ -134,11 +183,17 @@ function showDashboard() {
         greeting.classList.remove('hidden');
     }
     if (logoutBtn) logoutBtn.classList.remove('hidden');
+
     loadTasks();
     setupDailyEmailCheck();
 }
 
+// ==========================================
+// EVENT LISTENERS SETUP
+// ==========================================
+
 function setupEventListeners() {
+    // Auth form toggles
     const showRegisterBtn = document.getElementById('showRegister');
     const showLoginBtn = document.getElementById('showLogin');
     if (showRegisterBtn) showRegisterBtn.addEventListener('click', () => {
@@ -150,6 +205,7 @@ function setupEventListeners() {
         document.getElementById('loginForm').classList.remove('hidden');
     });
 
+    // Form submissions
     const loginEl = document.getElementById('loginFormElement');
     const registerEl = document.getElementById('registerFormElement');
     const taskForm = document.getElementById('taskForm');
@@ -157,6 +213,7 @@ function setupEventListeners() {
     if (registerEl) registerEl.addEventListener('submit', handleRegister);
     if (taskForm) taskForm.addEventListener('submit', handleTaskSubmit);
 
+    // Buttons
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
@@ -172,6 +229,7 @@ function setupEventListeners() {
     const cancelBtn = document.getElementById('cancelBtn');
     if (cancelBtn) cancelBtn.addEventListener('click', closeTaskModal);
 
+    // Search and filters
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.addEventListener('input', filterTasks);
 
@@ -181,12 +239,16 @@ function setupEventListeners() {
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) statusFilter.addEventListener('change', filterTasks);
 
+    // Modal backdrop click
     if (taskModal) taskModal.addEventListener('click', (e) => {
         if (e.target === taskModal) closeTaskModal();
     });
 
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && taskModal && !taskModal.classList.contains('hidden')) closeTaskModal();
+        if (e.key === 'Escape' && taskModal && !taskModal.classList.contains('hidden')) {
+            closeTaskModal();
+        }
         if (e.ctrlKey && e.key === 'n') {
             e.preventDefault();
             if (currentUser) openTaskModal();
@@ -194,12 +256,21 @@ function setupEventListeners() {
     });
 }
 
+// ==========================================
+// AUTHENTICATION HANDLERS
+// ==========================================
+
 async function handleLogin(e) {
     e.preventDefault();
-    if (!isOnline) return showToast('error', 'Offline', 'Check your internet connection');
+
+    if (!isOnline) {
+        showToast('error', 'Offline', 'Please check your internet connection');
+        return;
+    }
 
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
+
     const loginBtn = document.getElementById('loginBtn');
     const loginBtnText = document.getElementById('loginBtnText');
     const loginSpinner = document.getElementById('loginSpinner');
@@ -214,12 +285,22 @@ async function handleLogin(e) {
     } catch (error) {
         console.error('Login error:', error);
         let errorMessage = 'Invalid email or password';
+
         switch (error.code) {
-            case 'auth/user-not-found': errorMessage = 'No account found'; break;
-            case 'auth/wrong-password': errorMessage = 'Incorrect password'; break;
-            case 'auth/invalid-email': errorMessage = 'Invalid email'; break;
-            case 'auth/too-many-requests': errorMessage = 'Too many attempts'; break;
+            case 'auth/user-not-found':
+                errorMessage = 'No account found with this email';
+                break;
+            case 'auth/wrong-password':
+                errorMessage = 'Incorrect password';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = 'Invalid email address';
+                break;
+            case 'auth/too-many-requests':
+                errorMessage = 'Too many failed attempts. Please try again later';
+                break;
         }
+
         showToast('error', 'Login Failed', errorMessage);
     } finally {
         loginBtn.disabled = false;
@@ -230,16 +311,31 @@ async function handleLogin(e) {
 
 async function handleRegister(e) {
     e.preventDefault();
-    if (!isOnline) return showToast('error', 'Offline', 'Check your internet connection');
+
+    if (!isOnline) {
+        showToast('error', 'Offline', 'Please check your internet connection');
+        return;
+    }
 
     const name = document.getElementById('registerName').value.trim();
     const email = document.getElementById('registerEmail').value.trim();
     const grade = document.getElementById('registerGrade').value;
     const password = document.getElementById('registerPassword').value;
 
-    if (name.length < 2) return showToast('error', 'Invalid Name', 'Name must be 2+ chars');
-    if (grade !== "11" && grade !== "12") return showToast('error', 'Invalid Grade', 'Only 11/12 allowed');
-    if (password.length < 6) return showToast('error', 'Weak Password', 'Password must be 6+ chars');
+    if (name.length < 2) {
+        showToast('error', 'Invalid Name', 'Name must be at least 2 characters');
+        return;
+    }
+
+    if (grade !== "11" && grade !== "12") {
+        showToast('error', 'Invalid Grade', 'Only Grade 11 and Grade 12 are allowed');
+        return;
+    }
+
+    if (password.length < 6) {
+        showToast('error', 'Weak Password', 'Password must be at least 6 characters');
+        return;
+    }
 
     const registerBtn = document.getElementById('registerBtn');
     const registerBtnText = document.getElementById('registerBtnText');
@@ -252,26 +348,43 @@ async function handleRegister(e) {
     try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
+
         await user.updateProfile({ displayName: name });
+
         await db.collection('users').doc(user.uid).set({
-            name, email, grade,
+            name: name,
+            email: email,
+            grade: grade,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // Send welcome email (if emailjs configured)
         try {
-            if (EMAIL_CONFIG.publicKey) await sendWelcomeEmail(name, email);
-        } catch (emailError) { console.error('Welcome email failed:', emailError); }
+            if (EMAIL_CONFIG.publicKey && EMAIL_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+                await sendWelcomeEmail(name, email);
+            }
+        } catch (emailError) {
+            console.error('Welcome email failed:', emailError);
+        }
 
         showToast('success', 'Account Created!', 'Welcome to Task Ko To!');
     } catch (error) {
         console.error('Registration error:', error);
         let errorMessage = 'Failed to create account';
+
         switch (error.code) {
-            case 'auth/email-already-in-use': errorMessage = 'Email already registered'; break;
-            case 'auth/invalid-email': errorMessage = 'Invalid email'; break;
-            case 'auth/weak-password': errorMessage = 'Password too weak'; break;
+            case 'auth/email-already-in-use':
+                errorMessage = 'Email already registered';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = 'Invalid email address';
+                break;
+            case 'auth/weak-password':
+                errorMessage = 'Password is too weak';
+                break;
         }
+
         showToast('error', 'Registration Failed', errorMessage);
     } finally {
         registerBtn.disabled = false;
@@ -286,12 +399,17 @@ async function handleLogout() {
         showToast('info', 'Logged Out', 'See you next time!');
     } catch (error) {
         console.error('Logout error:', error);
-        showToast('error', 'Logout Failed', 'Try again');
+        showToast('error', 'Logout Failed', 'Please try again');
     }
 }
 
+// ==========================================
+// TASK MANAGEMENT
+// ==========================================
+
 async function loadTasks() {
     if (!currentUser || !isOnline) return;
+
     try {
         const snapshot = await db.collection('tasks')
             .where('userId', '==', currentUser.id)
@@ -303,10 +421,10 @@ async function loadTasks() {
             return {
                 id: doc.id,
                 ...data,
+                // store ISO strings for consistent rendering
                 dueDate: data.dueDate ? data.dueDate.toDate().toISOString() : new Date().toISOString(),
                 createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-                completedAt: data.completedAt ? data.completedAt.toDate().toISOString() : null,
-                status: data.status || 'pending'
+                completedAt: data.completedAt ? data.completedAt.toDate().toISOString() : null
             };
         });
 
@@ -320,7 +438,11 @@ async function loadTasks() {
 
 async function handleTaskSubmit(e) {
     e.preventDefault();
-    if (!isOnline) return showToast('error', 'Offline', 'Check internet');
+
+    if (!isOnline) {
+        showToast('error', 'Offline', 'Please check your internet connection');
+        return;
+    }
 
     const taskSubmitBtn = document.getElementById('taskSubmitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
@@ -349,17 +471,19 @@ async function handleTaskSubmit(e) {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    if (!editingTaskId) taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    if (editingTaskId) delete taskData.status;
+    if (!editingTaskId) {
+        taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
 
     try {
         if (editingTaskId) {
             await db.collection('tasks').doc(editingTaskId).update(taskData);
-            showToast('success', 'Task Updated!', 'Task updated successfully');
+            showToast('success', 'Task Updated!', 'Your task has been updated successfully');
         } else {
             await db.collection('tasks').add(taskData);
-            showToast('success', 'Task Added!', 'New task created');
+            showToast('success', 'Task Added!', 'Your new task has been created');
         }
+
         await loadTasks();
         closeTaskModal();
     } catch (error) {
@@ -371,6 +495,7 @@ async function handleTaskSubmit(e) {
         taskSubmitSpinner.classList.add('hidden');
     }
 }
+
 async function deleteTask(taskId) {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
@@ -512,6 +637,7 @@ function renderTasks() {
                     ${isDueSoon ? '<div class="flex items-center text-sm text-amber-600"><i class="fas fa-clock mr-2"></i><span>Due within 24 hours!</span></div>' : ''}
                     ${task.completedAt ? `<div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div>` : ''}
                 </div>
+
                 <div class="flex justify-between items-center">
                     <button onclick="toggleTaskStatus('${task.id}')" class="flex items-center text-sm ${task.status === 'completed' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'} transition-colors">
                         <i class="fas ${task.status === 'completed' ? 'fa-undo' : 'fa-check-circle'} mr-2"></i>
@@ -802,4 +928,3 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     showToast('error', 'Something went wrong', 'Please refresh the page and try again');
 });
-
