@@ -460,6 +460,7 @@ async function handleTaskSubmit(e) {
 
     const dueDateTimestamp = firebase.firestore.Timestamp.fromDate(new Date(dueDateRaw));
 
+    // FIX: removed status to avoid undefined
     const taskData = {
         userId: currentUser.id,
         title,
@@ -467,17 +468,23 @@ async function handleTaskSubmit(e) {
         subject,
         dueDate: dueDateTimestamp,
         priority,
-        status: editingTaskId ? undefined : 'pending',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
     if (!editingTaskId) {
+        // FIX: Add status only when creating
+        taskData.status = "pending";
         taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     }
 
     try {
         if (editingTaskId) {
-            await db.collection('tasks').doc(editingTaskId).update(taskData);
+            // FIX: Never send status when editing
+            const updatePayload = { ...taskData };
+            delete updatePayload.status;
+
+            await db.collection('tasks').doc(editingTaskId).update(updatePayload);
+
             showToast('success', 'Task Updated!', 'Your task has been updated successfully');
         } else {
             await db.collection('tasks').add(taskData);
@@ -757,12 +764,12 @@ async function checkDeadlines() {
 
         if (urgentTasks.overdue.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
             await sendOverdueEmail(urgentTasks.overdue);
-            emailsSent++;
+            emailsSent += urgentTasks.overdue.length;
         }
 
         if (urgentTasks.upcoming.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
             await sendUpcomingEmail(urgentTasks.upcoming);
-            emailsSent++;
+            emailsSent += urgentTasks.upcoming.length;
         }
 
         if (emailsSent > 0) {
@@ -785,58 +792,41 @@ async function checkDeadlines() {
 async function sendOverdueEmail(overdueTasks) {
     if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.overdue) return;
 
-    const templateParams = {
-        to_name: currentUser.name,
-        to_email: currentUser.email,
-        overdue_count: overdueTasks.length,
-        task_list: overdueTasks.map(task =>
-            `• ${task.title} (${task.subject}) - Due: ${formatDateTime(task.dueDate)}`
-        ).join('\n'),
-        user_grade: `Grade ${currentUser.grade}`
-    };
+    for (const task of overdueTasks) {
+        const templateParams = {
+            student_name: currentUser.name,
+            task_title: task.title,
+            subject_name: task.subject,
+            due_date: formatDateTime(task.dueDate),
+            to_email: currentUser.email
+        };
 
-    return emailjs.send(
-        EMAIL_CONFIG.serviceId,
-        EMAIL_CONFIG.templates.overdue,
-        templateParams
-    );
+        await emailjs.send(
+            EMAIL_CONFIG.serviceId,
+            EMAIL_CONFIG.templates.overdue,
+            templateParams
+        );
+    }
 }
 
 async function sendUpcomingEmail(upcomingTasks) {
     if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.upcoming) return;
 
-    const templateParams = {
-        to_name: currentUser.name,
-        to_email: currentUser.email,
-        upcoming_count: upcomingTasks.length,
-        task_list: upcomingTasks.map(task =>
-            `• ${task.title} (${task.subject}) - Due: ${formatDateTime(task.dueDate)}`
-        ).join('\n'),
-        user_grade: `Grade ${currentUser.grade}`
-    };
+    for (const task of upcomingTasks) {
+        const templateParams = {
+            student_name: currentUser.name,
+            task_title: task.title,
+            subject_name: task.subject,
+            due_date: formatDateTime(task.dueDate),
+            to_email: currentUser.email
+        };
 
-    return emailjs.send(
-        EMAIL_CONFIG.serviceId,
-        EMAIL_CONFIG.templates.upcoming,
-        templateParams
-    );
-}
-
-async function sendWelcomeEmail(name, email) {
-    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.welcome) return;
-
-    const templateParams = {
-        to_name: name,
-        to_email: email,
-        app_name: 'Task Ko To!',
-        login_url: window.location.origin
-    };
-
-    return emailjs.send(
-        EMAIL_CONFIG.serviceId,
-        EMAIL_CONFIG.templates.welcome,
-        templateParams
-    );
+        await emailjs.send(
+            EMAIL_CONFIG.serviceId,
+            EMAIL_CONFIG.templates.upcoming,
+            templateParams
+        );
+    }
 }
 
 function getUrgentTasks() {
@@ -845,7 +835,7 @@ function getUrgentTasks() {
         if (task.status === 'completed') return false;
         const dueDate = new Date(task.dueDate);
         const timeDiff = dueDate - now;
-        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000;
+        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // next 24 hours
     });
 
     const overdueTasks = tasks.filter(task => {
@@ -863,8 +853,9 @@ function setupDailyEmailCheck() {
         if (urgentTasks.overdue.length > 0 || urgentTasks.upcoming.length > 0) {
             console.log('Urgent tasks detected:', urgentTasks);
         }
-    }, 60 * 60 * 1000);
+    }, 60 * 60 * 1000); // every 1 hour
 }
+
 
 // ==========================================
 // UTILITIES
