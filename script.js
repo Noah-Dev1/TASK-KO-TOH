@@ -751,6 +751,11 @@ async function checkDeadlines() {
         return;
     }
 
+    if (!currentUser || !currentUser.email) {
+        showToast('error', 'Email Failed', 'No recipient email configured.');
+        return;
+    }
+
     const button = document.getElementById('checkDeadlinesBtn');
     const originalText = button ? button.innerHTML : '';
     if (button) {
@@ -762,14 +767,14 @@ async function checkDeadlines() {
         const urgentTasks = getUrgentTasks();
         let emailsSent = 0;
 
-        if (urgentTasks.overdue.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
+        if (urgentTasks.overdue.length > 0 && EMAIL_CONFIG.serviceId && EMAIL_CONFIG.templates.overdue) {
             await sendOverdueEmail(urgentTasks.overdue);
-            emailsSent += urgentTasks.overdue.length;
+            emailsSent++;
         }
 
-        if (urgentTasks.upcoming.length > 0 && EMAIL_CONFIG.serviceId !== 'YOUR_EMAILJS_SERVICE_ID') {
+        if (urgentTasks.upcoming.length > 0 && EMAIL_CONFIG.serviceId && EMAIL_CONFIG.templates.upcoming) {
             await sendUpcomingEmail(urgentTasks.upcoming);
-            emailsSent += urgentTasks.upcoming.length;
+            emailsSent++;
         }
 
         if (emailsSent > 0) {
@@ -790,43 +795,43 @@ async function checkDeadlines() {
 }
 
 async function sendOverdueEmail(overdueTasks) {
-    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.overdue) return;
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.overdue || !currentUser || !currentUser.email) return;
 
-    for (const task of overdueTasks) {
-        const templateParams = {
-            student_name: currentUser.name,
-            task_title: task.title,
-            subject_name: task.subject,
-            due_date: formatDateTime(task.dueDate),
-            to_email: currentUser.email
-        };
+    const templateParams = {
+        student_name: currentUser.name,
+        task_title: overdueTasks.map(task => task.title).join(', '),
+        subject_name: overdueTasks.map(task => task.subject).join(', '),
+        due_date: overdueTasks.map(task => formatDateTime(task.dueDate)).join(', '),
+        to_email: currentUser.email
+    };
 
-        await emailjs.send(
-            EMAIL_CONFIG.serviceId,
-            EMAIL_CONFIG.templates.overdue,
-            templateParams
-        );
-    }
+    console.log('Sending overdue email with params:', templateParams);
+
+    return emailjs.send(
+        EMAIL_CONFIG.serviceId,
+        EMAIL_CONFIG.templates.overdue,
+        templateParams
+    );
 }
 
 async function sendUpcomingEmail(upcomingTasks) {
-    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.upcoming) return;
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.upcoming || !currentUser || !currentUser.email) return;
 
-    for (const task of upcomingTasks) {
-        const templateParams = {
-            student_name: currentUser.name,
-            task_title: task.title,
-            subject_name: task.subject,
-            due_date: formatDateTime(task.dueDate),
-            to_email: currentUser.email
-        };
+    const templateParams = {
+        student_name: currentUser.name,
+        task_title: upcomingTasks.map(task => task.title).join(', '),
+        subject_name: upcomingTasks.map(task => task.subject).join(', '),
+        due_date: upcomingTasks.map(task => formatDateTime(task.dueDate)).join(', '),
+        to_email: currentUser.email
+    };
 
-        await emailjs.send(
-            EMAIL_CONFIG.serviceId,
-            EMAIL_CONFIG.templates.upcoming,
-            templateParams
-        );
-    }
+    console.log('Sending upcoming email with params:', templateParams);
+
+    return emailjs.send(
+        EMAIL_CONFIG.serviceId,
+        EMAIL_CONFIG.templates.upcoming,
+        templateParams
+    );
 }
 
 function getUrgentTasks() {
@@ -835,7 +840,7 @@ function getUrgentTasks() {
         if (task.status === 'completed') return false;
         const dueDate = new Date(task.dueDate);
         const timeDiff = dueDate - now;
-        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // next 24 hours
+        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000;
     });
 
     const overdueTasks = tasks.filter(task => {
@@ -853,9 +858,8 @@ function setupDailyEmailCheck() {
         if (urgentTasks.overdue.length > 0 || urgentTasks.upcoming.length > 0) {
             console.log('Urgent tasks detected:', urgentTasks);
         }
-    }, 60 * 60 * 1000); // every 1 hour
+    }, 60 * 60 * 1000);
 }
-
 
 // ==========================================
 // UTILITIES
