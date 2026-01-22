@@ -184,8 +184,13 @@ function showDashboard() {
     }
     if (logoutBtn) logoutBtn.classList.remove('hidden');
 
-    loadTasks();
-    setupDailyEmailCheck();
+   loadTasks().then(() => {
+    autoInAppNotifications();
+    autoEmailNotifications();
+});
+
+setupDailyEmailCheck();
+
 }
 
 // ==========================================
@@ -922,4 +927,164 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     showToast('error', 'Something went wrong', 'Please refresh the page and try again');
+
+    // ==========================================
+// EMAIL & AUTOMATIC NOTIFICATIONS (EmailJS)
+// ==========================================
+
+// Prevent duplicate notifications per day
+function hasNotifiedToday(taskId, type) {
+    const key = `notify_${type}_${taskId}`;
+    const today = new Date().toDateString();
+
+    const last = localStorage.getItem(key);
+    if (last === today) return true;
+
+    localStorage.setItem(key, today);
+    return false;
+}
+
+// Get overdue & upcoming tasks
+function getUrgentTasks() {
+    const now = new Date();
+
+    const upcomingTasks = tasks.filter(task => {
+        if (task.status === 'completed') return false;
+        const dueDate = new Date(task.dueDate);
+        const timeDiff = dueDate - now;
+        return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000;
+    });
+
+    const overdueTasks = tasks.filter(task => {
+        if (task.status === 'completed') return false;
+        const dueDate = new Date(task.dueDate);
+        return dueDate < now;
+    });
+
+    return { upcoming: upcomingTasks, overdue: overdueTasks };
+}
+
+// =======================
+// IN-APP AUTO NOTIFICATIONS
+// =======================
+function autoInAppNotifications() {
+    const { overdue, upcoming } = getUrgentTasks();
+
+    overdue.forEach(task => {
+        if (!hasNotifiedToday(task.id, 'overdue_toast')) {
+            showToast(
+                'error',
+                'Task Overdue',
+                `${task.title} (${task.subject}) was due on ${formatDateTime(task.dueDate)}`
+            );
+        }
+    });
+
+    upcoming.forEach(task => {
+        if (!hasNotifiedToday(task.id, 'upcoming_toast')) {
+            showToast(
+                'info',
+                'Upcoming Deadline',
+                `${task.title} (${task.subject}) is due within 24 hours`
+            );
+        }
+    });
+}
+
+// =======================
+// EMAIL SENDING FUNCTIONS
+// =======================
+async function sendOverdueEmail(overdueTasks) {
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.overdue) return;
+
+    const task = overdueTasks[0];
+
+    const templateParams = {
+        student_name: currentUser.name,
+        to_email: currentUser.email,
+        task_title: task.title,
+        subject_name: task.subject,
+        due_date: formatDateTime(task.dueDate)
+    };
+
+    return emailjs.send(
+        EMAIL_CONFIG.serviceId,
+        EMAIL_CONFIG.templates.overdue,
+        templateParams
+    );
+}
+
+async function sendUpcomingEmail(upcomingTasks) {
+    if (!EMAIL_CONFIG.serviceId || !EMAIL_CONFIG.templates.upcoming) return;
+
+    const task = upcomingTasks[0];
+
+    const templateParams = {
+        student_name: currentUser.name,
+        to_email: currentUser.email,
+        task_title: task.title,
+        subject_name: task.subject,
+        due_date: formatDateTime(task.dueDate)
+    };
+
+    return emailjs.send(
+        EMAIL_CONFIG.serviceId,
+        EMAIL_CONFIG.templates.upcoming,
+        templateParams
+    );
+}
+
+// =======================
+// AUTOMATIC EMAIL CHECKER
+// =======================
+async function autoEmailNotifications() {
+    if (!currentUser || !currentUser.email || !isOnline) return;
+
+    const { overdue, upcoming } = getUrgentTasks();
+
+    const overdueToSend = overdue.filter(task =>
+        !hasNotifiedToday(task.id, 'overdue_email')
+    );
+
+    const upcomingToSend = upcoming.filter(task =>
+        !hasNotifiedToday(task.id, 'upcoming_email')
+    );
+
+    if (overdueToSend.length > 0) {
+        await sendOverdueEmail(overdueToSend);
+    }
+
+    if (upcomingToSend.length > 0) {
+        await sendUpcomingEmail(upcomingToSend);
+    }
+}
+
+// =======================
+// MANUAL BUTTON HANDLER
+// =======================
+async function checkDeadlines() {
+    if (!isOnline) {
+        showToast('error', 'Offline', 'Please check your internet connection');
+        return;
+    }
+
+    try {
+        await autoEmailNotifications();
+        showToast('success', 'Checked!', 'Deadline notifications processed');
+    } catch (error) {
+        console.error('Email sending failed:', error);
+        showToast('error', 'Email Failed', 'Could not send email notifications');
+    }
+}
+
+// =======================
+// HOURLY AUTO CHECK
+// =======================
+function setupDailyEmailCheck() {
+    setInterval(() => {
+        autoInAppNotifications();
+        autoEmailNotifications();
+    }, 60 * 60 * 1000);
+}
+
 });
