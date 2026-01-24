@@ -184,8 +184,17 @@ function showDashboard() {
     }
     if (logoutBtn) logoutBtn.classList.remove('hidden');
 
-    loadTasks();
-    setupDailyEmailCheck();
+    loadTasks().then(() => {
+    autoInAppNotifications();
+    autoEmailNotifications();
+});
+
+setupDailyEmailCheck();
+    setInterval(() => {
+    autoInAppNotifications();
+    autoEmailNotifications();
+}, 60 * 60 * 1000);
+
 }
 
 // ==========================================
