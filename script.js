@@ -184,17 +184,8 @@ function showDashboard() {
     }
     if (logoutBtn) logoutBtn.classList.remove('hidden');
 
-    loadTasks().then(() => {
-    autoInAppNotifications();
-    autoEmailNotifications();
-});
-
-setupDailyEmailCheck();
-    setInterval(() => {
-    autoInAppNotifications();
-    autoEmailNotifications();
-}, 60 * 60 * 1000);
-
+    loadTasks();
+    setupDailyEmailCheck();
 }
 
 // ==========================================
@@ -858,52 +849,16 @@ function getUrgentTasks() {
         return dueDate < now;
     });
 
-    // ==========================================
-// AUTOMATIC IN-APP NOTIFICATIONS
-// ==========================================
-
-function autoInAppNotifications() {
-    if (!currentUser) return;
-
-    const urgentTasks = getUrgentTasks();
-
-    if (urgentTasks.overdue.length > 0) {
-        showToast(
-            'warning',
-            'Overdue Tasks',
-            `You have ${urgentTasks.overdue.length} overdue task(s)`
-        );
-    }
-
-    if (urgentTasks.upcoming.length > 0) {
-        showToast(
-            'info',
-            'Upcoming Deadlines',
-            `You have ${urgentTasks.upcoming.length} task(s) due within 24 hours`
-        );
-    }
+    return { upcoming: upcomingTasks, overdue: overdueTasks };
 }
 
-// ==========================================
-// AUTOMATIC EMAIL NOTIFICATIONS
-// ==========================================
-
-async function autoEmailNotifications() {
-    if (!isOnline || !currentUser || !currentUser.email) return;
-
-    const urgentTasks = getUrgentTasks();
-
-    try {
-        if (urgentTasks.overdue.length > 0) {
-            await sendOverdueEmail(urgentTasks.overdue);
+function setupDailyEmailCheck() {
+    setInterval(() => {
+        const urgentTasks = getUrgentTasks();
+        if (urgentTasks.overdue.length > 0 || urgentTasks.upcoming.length > 0) {
+            console.log('Urgent tasks detected:', urgentTasks);
         }
-
-        if (urgentTasks.upcoming.length > 0) {
-            await sendUpcomingEmail(urgentTasks.upcoming);
-        }
-    } catch (error) {
-        console.error('Auto email notification failed:', error);
-    }
+    }, 60 * 60 * 1000);
 }
 
 // ==========================================
