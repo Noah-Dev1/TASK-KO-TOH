@@ -848,6 +848,56 @@ function getUrgentTasks() {
         const dueDate = new Date(task.dueDate);
         return dueDate < now;
     });
+// =======================
+// AUTOMATIC NOTIFICATION HELPERS
+// =======================
+function hasNotifiedToday(taskId, type) {
+    const key = `notify_${type}_${taskId}`;
+    const today = new Date().toDateString();
+
+    if (localStorage.getItem(key) === today) return true;
+
+    localStorage.setItem(key, today);
+    return false;
+}
+
+function autoInAppNotifications() {
+    const { overdue, upcoming } = getUrgentTasks();
+
+    overdue.forEach(task => {
+        if (!hasNotifiedToday(task.id, 'overdue_toast')) {
+            showToast(
+                'error',
+                'Task Overdue',
+                `${task.title} (${task.subject}) was due on ${formatDateTime(task.dueDate)}`
+            );
+        }
+    });
+
+    upcoming.forEach(task => {
+        if (!hasNotifiedToday(task.id, 'upcoming_toast')) {
+            showToast(
+                'info',
+                'Upcoming Deadline',
+                `${task.title} (${task.subject}) is due within 24 hours`
+            );
+        }
+    });
+}
+
+async function autoEmailNotifications() {
+    if (!currentUser || !currentUser.email || !isOnline) return;
+
+    const { overdue, upcoming } = getUrgentTasks();
+
+    if (overdue.length > 0 && !hasNotifiedToday(overdue[0].id, 'overdue_email')) {
+        await sendOverdueEmail(overdue);
+    }
+
+    if (upcoming.length > 0 && !hasNotifiedToday(upcoming[0].id, 'upcoming_email')) {
+        await sendUpcomingEmail(upcoming);
+    }
+}
 
     return { upcoming: upcomingTasks, overdue: overdueTasks };
 }
