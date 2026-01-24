@@ -42,6 +42,23 @@ const emptyState = document.getElementById('emptyState');
 const taskModal = document.getElementById('taskModal');
 
 // =========================================
+// NAVBAR USER DISPLAY
+// =========================================
+function updateNavbarUser(user) {
+    const userGreeting = document.getElementById('userGreeting');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (user) {
+        userGreeting.textContent = `Hello, ${user.name || user.displayName || user.email}`;
+        userGreeting.classList.remove('hidden');
+        logoutBtn.classList.remove('hidden');
+    } else {
+        userGreeting.classList.add('hidden');
+        logoutBtn.classList.add('hidden');
+    }
+}
+
+// =========================================
 // EVENT LISTENERS
 // =========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -103,10 +120,19 @@ auth.onAuthStateChanged(async user => {
             if (userDoc.exists) {
                 const data = userDoc.data();
                 currentUser = { id: user.uid, name: data.name, email: data.email, grade: data.grade };
+                
+                // ✅ Show user in navbar
+                updateNavbarUser(currentUser);
+
                 showDashboard();
             } else await auth.signOut();
         } catch (error) { console.error(error); await auth.signOut(); }
-    } else { currentUser = null; tasks = []; showAuthScreen(); }
+    } else {
+        currentUser = null;
+        tasks = [];
+        showAuthScreen();
+        updateNavbarUser(null); // ✅ hide navbar user info
+    }
 });
 
 async function handleLogin(e) {
@@ -137,7 +163,16 @@ async function handleRegister(e) {
     } catch(err){ console.error(err); showToast('error','Registration Failed','Could not create account'); }
 }
 
-async function handleLogout() { try { await auth.signOut(); showToast('info','Logged Out','See you next time!'); } catch(err){ console.error(err); showToast('error','Logout Failed','Try again'); } }
+async function handleLogout() {
+    try {
+        await auth.signOut();
+        showToast('info','Logged Out','See you next time!');
+        updateNavbarUser(null); // ✅ hide navbar user info
+    } catch(err){
+        console.error(err);
+        showToast('error','Logout Failed','Try again');
+    }
+}
 
 function showAuthScreen() { authScreen?.classList.remove('hidden'); dashboardScreen?.classList.add('hidden'); }
 function showDashboard() { authScreen?.classList.add('hidden'); dashboardScreen?.classList.remove('hidden'); loadTasks(); setupDailyEmailCheck(); }
