@@ -1,3 +1,17 @@
+/* Wrapper stylesheet loaded by index.html to avoid 404s.
+   It imports the real stylesheet located in the sibling `style.css` folder.
+   If your server supports direct access to `/style.css/style.css` this will succeed.
+*/
+@import url('../style.css/style.css');
+
+/* Fallback if import fails */
+:root {
+  --calendar-fallback-bg: #ffffff;
+}
+body {
+  background-color: var(--calendar-fallback-bg);
+}
+
 body {
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
