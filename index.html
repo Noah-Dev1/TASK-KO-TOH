@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Loading Screen -->
@@ -217,6 +217,55 @@
                     </div>
                 </div>
 
+                <!-- Calendar View -->
+                <div id="calendarView" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-4">
+                            <button id="prevMonth" class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="calendarMonth" class="text-xl font-semibold text-gray-900">January 2026</h3>
+                            <button id="nextMonth" class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm text-gray-600">Tasks this week: <span id="tasksThisWeek">0</span></div>
+                            <div class="text-sm text-gray-600">Today: <span id="todayCompletedCount">0</span> completed</div>
+                            <select id="subjectFilterCalendar" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Subjects</option>
+                            </select>
+                            <select id="priorityFilterCalendar" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Priorities</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-2 text-sm text-center mb-3">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-2"></div>
+
+                    <div id="calendarLegend" class="flex items-center gap-3 mt-4 text-sm flex-wrap">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span>New</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Tentative</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-400"></span>2–5 days</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-500"></span>Today</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span>Overdue</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-gray-400"></span>Completed</div>
+                    </div>
+                </div>
+
                 <!-- Tasks Container -->
                 <div id="tasksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Tasks will be dynamically inserted here -->
@@ -281,6 +330,34 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Day Modal -->
+    <div id="calendarDayModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="calendarModalTitle" class="text-xl font-semibold text-gray-900">Tasks for <span id="calendarModalDate"></span></h3>
+                    <button id="closeCalendarModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 mb-4">
+                    <select id="subjectFilterModal" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">All Subjects</option>
+                    </select>
+                    <select id="priorityFilterModal" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div id="calendarModalList" class="space-y-3">
+                    <!-- Task items injected via JS -->
+                </div>
             </div>
         </div>
     </div>
