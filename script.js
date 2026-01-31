@@ -625,7 +625,7 @@ function renderTasks() {
                     <div class="flex-1">
                         <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h3>
                         <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.subject)}</p>
-                        ${task.description ? <p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p> : ''}
+                        ${task.description ? p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p> : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full priority-badge-${task.priority}">
