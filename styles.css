@@ -1,17 +1,3 @@
-/* Wrapper stylesheet loaded by index.html to avoid 404s.
-   It imports the real stylesheet located in the sibling `style.css` folder.
-   If your server supports direct access to `/style.css/style.css` this will succeed.
-*/
-@import url('../style.css/style.css');
-
-/* Fallback if import fails */
-:root {
-  --calendar-fallback-bg: #ffffff;
-}
-body {
-  background-color: var(--calendar-fallback-bg);
-}
-
 body {
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
@@ -262,6 +248,52 @@ input:valid {
     background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
 }
 
+/* Calendar Styles */
+#calendarGrid {
+    margin-top: 8px;
+}
+#calendarGrid .day-cell {
+    min-height: 80px;
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+}
+#calendarGrid .day-cell:hover {
+    background: rgba(99,102,241,0.06);
+    border-color: rgba(99,102,241,0.12);
+}
+#calendarGrid .day-cell .day-number {
+    font-weight: 600;
+}
+#calendarGrid .day-cell .indicators {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.task-indicator {
+    width: 9px;
+    height: 9px;
+    border-radius: 9999px;
+    display: inline-block;
+}
+.indicator-green { background: #10B981; opacity: 0.95; }
+.indicator-blue  { background: #3B82F6; }
+.indicator-yellow{ background: #F59E0B; }
+.indicator-orange{ background: #FB923C; }
+.indicator-red   { background: #EF4444; }
+.indicator-gray  { background: #9CA3AF; opacity: 0.65; }
+#calendarGrid .day-cell.other-month { opacity: 0.35; }
+.day-task-title.completed { text-decoration: line-through; color: #6B7280; opacity: 0.8; }
+
+@media (max-width: 640px) {
+    #calendarGrid .day-cell { min-height: 64px; padding: 6px; }
+}
+
 /* Animation Delays */
 .animate-delay-100 {
     animation-delay: 0.1s;
@@ -294,66 +326,6 @@ input:valid {
 /* Dark Mode Support (Optional) */
 @media (prefers-color-scheme: dark) {
     /* Add dark mode styles here if needed */
-}
-
-/* Calendar Styles */
-#calendarView {
-    background: #ffffff;
-}
-#calendarGrid {
-    min-height: 220px;
-}
-.calendar-cell {
-    border: 1px solid #edf2f7;
-    min-height: 90px;
-    padding: 8px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #fff;
-}
-.calendar-cell.outside-month {
-    background: #fafafa;
-    color: #9ca3af;
-}
-.calendar-day-number {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.85rem;
-}
-.task-indicators {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-}
-.task-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
-.task-indicator.small {
-    width: 8px;
-    height: 8px;
-}
-/* Color categories (match feature requirements) */
-.indicator-new { background: #10B981; /* green */ }
-.indicator-tentative { background: #3B82F6; /* blue */ }
-.indicator-due-soon { background: #F59E0B; /* yellow */ }
-.indicator-today { background: #F97316; /* orange */ }
-.indicator-overdue { background: #EF4444; /* red */ }
-.indicator-completed { background: #9CA3AF; opacity: 0.6; /* gray faded */ }
-
-.calendar-day-empty {
-    opacity: 0.6;
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-    #calendarGrid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-    .calendar-cell { min-height: 70px; padding: 6px; }
 }
 
 /* Print Styles */
