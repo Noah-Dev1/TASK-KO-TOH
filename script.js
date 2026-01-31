@@ -254,6 +254,8 @@ function setupEventListeners() {
             if (currentUser) openTaskModal();
         }
     });
+    // initialize calendar UI
+    if (typeof initCalendar === 'function') initCalendar();
 }
 
 // ==========================================
@@ -623,7 +625,7 @@ function renderTasks() {
                     <div class="flex-1">
                         <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h3>
                         <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.subject)}</p>
-                        ${task.description ? `<p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p>` : ''}
+                        ${task.description ? <p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p> : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full priority-badge-${task.priority}">
@@ -642,7 +644,7 @@ function renderTasks() {
                     </div>
                     ${isOverdue ? '<div class="flex items-center text-sm text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i><span>This task is overdue!</span></div>' : ''}
                     ${isDueSoon ? '<div class="flex items-center text-sm text-amber-600"><i class="fas fa-clock mr-2"></i><span>Due within 24 hours!</span></div>' : ''}
-                    ${task.completedAt ? `<div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div>` : ''}
+                    ${task.completedAt ? <div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div> : ''}
                 </div>
 
                 <div class="flex justify-between items-center">
@@ -662,6 +664,9 @@ function renderTasks() {
             </div>
         `;
     }).join('');
+    // Update calendar whenever tasks change or filter applied
+    if (typeof renderTasksOnCalendar === 'function') renderTasksOnCalendar();
+    if (typeof updateCalendarSummary === 'function') updateCalendarSummary();
 }
 
 // Helper to avoid XSS in inserted HTML
@@ -740,6 +745,233 @@ function updateStatistics() {
     if (pendingEl) pendingEl.textContent = pending;
     if (overdueEl) overdueEl.textContent = overdue;
 }
+
+// ==========================================
+// CALENDAR VIEW
+// ==========================================
+
+let calendarDate = new Date();
+
+// Initialize calendar UI, populate filters and attach events
+function initCalendar() {
+    const prevBtn = document.getElementById('prevMonthBtn');
+    const nextBtn = document.getElementById('nextMonthBtn');
+    const subjectFilter = document.getElementById('calSubjectFilter');
+    const priorityFilter = document.getElementById('calPriorityFilter');
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); createCalendar(calendarDate); renderTasksOnCalendar(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); createCalendar(calendarDate); renderTasksOnCalendar(); });
+
+    if (subjectFilter) subjectFilter.addEventListener('change', () => renderTasksOnCalendar());
+    if (priorityFilter) priorityFilter.addEventListener('change', () => renderTasksOnCalendar());
+
+    // Day modal controls
+    const closeDay = document.getElementById('closeDayModal');
+    const closeDayFooter = document.getElementById('closeDayModalFooter');
+    const dayModal = document.getElementById('dayTasksModal');
+    if (closeDay) closeDay.addEventListener('click', () => { if (dayModal) dayModal.classList.add('hidden'); });
+    if (closeDayFooter) closeDayFooter.addEventListener('click', () => { if (dayModal) dayModal.classList.add('hidden'); });
+
+    // Modal filter controls (re-render day list when changed)
+    const dayModalSubject = document.getElementById('dayModalSubjectFilter');
+    const dayModalPriority = document.getElementById('dayModalPriorityFilter');
+    if (dayModalSubject) dayModalSubject.addEventListener('change', () => { const d = dayModal?.dataset?.date; if (d) showDayTasks(d); });
+    if (dayModalPriority) dayModalPriority.addEventListener('change', () => { const d = dayModal?.dataset?.date; if (d) showDayTasks(d); });
+
+    // populate subject filters initially
+    populateCalendarFilters();
+
+    createCalendar(calendarDate);
+    renderTasksOnCalendar();
+    updateCalendarSummary();
+}
+
+// Build the calendar grid for the given date (month)
+function createCalendar(date) {
+    const grid = document.getElementById('calendarGrid');
+    const currentMonthEl = document.getElementById('currentMonth');
+    if (!grid || !currentMonthEl) return;
+
+    // Clear previous day cells (keep the 7 weekday headers)
+    grid.querySelectorAll('.day-cell')?.forEach(n => n.remove());
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    currentMonthEl.textContent = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const firstOfMonth = new Date(year, month, 1);
+    const startDay = firstOfMonth.getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Ensure 6 rows of 7 (42 cells) to keep layout stable
+    const totalCells = 42;
+    const firstCellDate = new Date(year, month, 1 - startDay);
+
+    for (let i = 0; i < totalCells; i++) {
+        const cellDate = new Date(firstCellDate);
+        cellDate.setDate(firstCellDate.getDate() + i);
+        const day = cellDate.getDate();
+        const isOtherMonth = cellDate.getMonth() !== month;
+        const cell = document.createElement('div');
+        cell.className = 'day-cell p-2';
+        if (isOtherMonth) cell.classList.add('other-month');
+        cell.dataset.date = cellDate.toISOString().slice(0,10);
+
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number text-right text-sm';
+        dayNumber.textContent = day;
+        cell.appendChild(dayNumber);
+
+        const indicators = document.createElement('div');
+        indicators.className = 'indicators';
+        cell.appendChild(indicators);
+
+        cell.addEventListener('click', () => {
+            showDayTasks(cell.dataset.date);
+        });
+
+        grid.appendChild(cell);
+    }
+}
+
+// Render tasks as small color indicators on calendar cells
+function renderTasksOnCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
+
+    // Clear existing indicators
+    grid.querySelectorAll('.day-cell .indicators').forEach(el => el.innerHTML = '');
+
+    // apply filters
+    const subjectFilter = document.getElementById('calSubjectFilter')?.value || '';
+    const priorityFilter = document.getElementById('calPriorityFilter')?.value || '';
+
+    tasks.forEach(task => {
+        // skip tasks without due date
+        if (!task.dueDate) return;
+        const dueDateStr = new Date(task.dueDate).toISOString().slice(0,10);
+        if (subjectFilter && task.subject !== subjectFilter) return;
+        if (priorityFilter && task.priority !== priorityFilter) return;
+
+        const cell = grid.querySelector(`.day-cell[data-date="${dueDateStr}"]`);
+        if (!cell) return;
+
+        const dot = document.createElement('span');
+        const colorClass = getColorClassForTask(task);
+        dot.className = `task-indicator ${colorClass}`;
+        dot.title = `${task.title} • ${task.subject} • ${formatDateTime(task.dueDate)}`;
+
+        cell.querySelector('.indicators')?.appendChild(dot);
+    });
+
+    // refresh subject lists and summary
+    populateCalendarFilters();
+    populateModalFilters();
+    updateCalendarSummary();
+}
+
+// Return color class for a task based on rules
+function getColorClassForTask(task) {
+    const now = new Date();
+    // normalize to local date for day comparison
+    const due = new Date(new Date(task.dueDate).toDateString());
+    const today = new Date(new Date().toDateString());
+    const diffDays = Math.round((due - today) / (24 * 60 * 60 * 1000));
+
+    if (task.status === 'completed') return 'indicator-green';
+    if (task.status === 'tentative') return 'indicator-gray';
+    if (diffDays < 0 && task.status !== 'completed') return 'indicator-red';
+    if (diffDays === 0) return 'indicator-orange';
+    if (diffDays >= 2 && diffDays <= 5) return 'indicator-yellow';
+    return 'indicator-blue';
+}
+
+// Show modal with tasks for the selected day
+function showDayTasks(dateStr) {
+    const dayModal = document.getElementById('dayTasksModal');
+    const dayModalDate = document.getElementById('dayModalDate');
+    const dayTasksList = document.getElementById('dayTasksList');
+    const subjectFilter = document.getElementById('dayModalSubjectFilter');
+    const priorityFilter = document.getElementById('dayModalPriorityFilter');
+
+    if (!dayModal || !dayModalDate || !dayTasksList) return;
+
+    dayModal.classList.remove('hidden');
+    dayModalDate.textContent = new Date(dateStr).toLocaleDateString();
+    // store ISO date for modal filters to reference
+    dayModal.dataset.date = dateStr;
+
+    // populate filter dropdowns
+    populateModalFilters();
+
+    const subVal = subjectFilter ? subjectFilter.value : '';
+    const priVal = priorityFilter ? priorityFilter.value : '';
+
+    const todaysTasks = tasks.filter(t => {
+        const tDate = new Date(new Date(t.dueDate).toISOString().slice(0,10));
+        return tDate.toISOString().slice(0,10) === dateStr &&
+            (subVal ? t.subject === subVal : true) &&
+            (priVal ? t.priority === priVal : true);
+    });
+
+    dayTasksList.innerHTML = todaysTasks.map(t => `
+        <div class="p-3 border rounded-lg flex justify-between items-start">
+            <div>
+                <div class="font-medium ${t.status === 'completed' ? 'day-task-title completed' : ''}">${escapeHtml(t.title)}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(t.subject)} • ${formatDateTime(t.dueDate)}</div>
+            </div>
+            <div class="flex flex-col items-end space-y-2">
+                <button onclick="toggleTaskStatus('${t.id}')" class="text-sm text-indigo-600">${t.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}</button>
+                <div class="flex space-x-2">
+                    <button onclick="editTask('${t.id}')" class="text-sm text-indigo-600">Edit</button>
+                    <button onclick="deleteTask('${t.id}')" class="text-sm text-red-600">Delete</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function populateCalendarFilters() {
+    const subjectEl = document.getElementById('calSubjectFilter');
+    if (!subjectEl) return;
+    const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean)));
+    subjectEl.innerHTML = '<option value="">All</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+function populateModalFilters() {
+    const subj = document.getElementById('dayModalSubjectFilter');
+    if (!subj) return;
+    const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean)));
+    subj.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+function updateCalendarSummary() {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0,0,0,0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const tasksThisWeek = tasks.filter(t => {
+        const d = new Date(new Date(t.dueDate).toISOString().slice(0,10));
+        return d >= startOfWeek && d <= endOfWeek;
+    }).length;
+
+    const completedToday = tasks.filter(t => {
+        const d = new Date(new Date(t.dueDate).toISOString().slice(0,10));
+        const isToday = d.toISOString().slice(0,10) === new Date().toISOString().slice(0,10);
+        return isToday && t.status === 'completed';
+    }).length;
+
+    const e = document.getElementById('tasksThisWeek');
+    const f = document.getElementById('completionToday');
+    if (e) e.textContent = `${tasksThisWeek} task${tasksThisWeek !== 1 ? 's' : ''} this week`;
+    if (f) f.textContent = `You finished ${completedToday} task${completedToday !== 1 ? 's' : ''} today!`;
+}
+
+
 
 // ==========================================
 // EMAIL NOTIFICATIONS (EmailJS)
@@ -909,328 +1141,6 @@ function showToast(type, title, message) {
         toast.style.transform = 'translateX(100%)';
     }, 5000);
 }
-
-// ==========================================
-// CALENDAR MODULE
-// Modular functions to create a monthly calendar, render task indicators,
-// update colors based on due dates, and show day details in a modal.
-// ==========================================
-
-const calendarState = {
-    currentDate: new Date()
-};
-
-// Initialize calendar UI and controls
-function initCalendar() {
-    populateSubjectFilters();
-    setupCalendarControls();
-    renderCalendar(calendarState.currentDate);
-}
-
-// Hook up navigation and filter controls
-function setupCalendarControls() {
-    const prev = document.getElementById('prevMonth');
-    const next = document.getElementById('nextMonth');
-    const subjectFilter = document.getElementById('subjectFilterCalendar');
-    const priorityFilter = document.getElementById('priorityFilterCalendar');
-
-    if (prev) prev.addEventListener('click', () => changeMonth(-1));
-    if (next) next.addEventListener('click', () => changeMonth(1));
-    if (subjectFilter) subjectFilter.addEventListener('change', () => renderCalendar(calendarState.currentDate));
-    if (priorityFilter) priorityFilter.addEventListener('change', () => renderCalendar(calendarState.currentDate));
-
-    const closeModalBtn = document.getElementById('closeCalendarModal');
-    if (closeModalBtn) closeModalBtn.addEventListener('click', closeCalendarModal);
-
-    const subjectModal = document.getElementById('subjectFilterModal');
-    const priorityModal = document.getElementById('priorityFilterModal');
-    if (subjectModal) subjectModal.addEventListener('change', () => openCalendarDayModal(document.getElementById('calendarModalDate').dataset.isoDate));
-    if (priorityModal) priorityModal.addEventListener('change', () => openCalendarDayModal(document.getElementById('calendarModalDate').dataset.isoDate));
-}
-
-// Move current month view
-function changeMonth(delta) {
-    calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() + delta);
-    renderCalendar(calendarState.currentDate);
-}
-
-// Render the calendar grid for the given date (month)
-function renderCalendar(date) {
-    const calendarGrid = document.getElementById('calendarGrid');
-    const monthLabel = document.getElementById('calendarMonth');
-    const tasksWeekEl = document.getElementById('tasksThisWeek');
-    const todayCompletedEl = document.getElementById('todayCompletedCount');
-
-    if (!calendarGrid || !monthLabel) return;
-
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    // Update header
-    const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    monthLabel.textContent = monthName;
-
-    // Build start date (start on Sunday) and show 6 weeks to cover all possibilities
-    const firstOfMonth = new Date(year, month, 1);
-    const startDayIndex = firstOfMonth.getDay(); // 0 (Sun) - 6 (Sat)
-
-    const startDate = new Date(year, month, 1 - startDayIndex);
-
-    calendarGrid.innerHTML = '';
-
-    const subjectFilter = document.getElementById('subjectFilterCalendar').value;
-    const priorityFilter = document.getElementById('priorityFilterCalendar').value;
-
-    for (let i = 0; i < 42; i++) {
-        const cellDate = new Date(startDate);
-        cellDate.setDate(startDate.getDate() + i);
-
-        const day = cellDate.getDate();
-        const isCurrentMonth = cellDate.getMonth() === month;
-        const isoDate = cellDate.toISOString().slice(0, 10);
-
-        const cell = document.createElement('div');
-        cell.className = 'calendar-cell';
-        if (!isCurrentMonth) cell.classList.add('outside-month');
-        cell.dataset.isoDate = isoDate;
-
-        // Day number
-        const dayNum = document.createElement('div');
-        dayNum.className = 'calendar-day-number';
-        dayNum.textContent = day;
-        cell.appendChild(dayNum);
-
-        // Indicators container
-        const indicators = document.createElement('div');
-        indicators.className = 'task-indicators';
-
-        // Find tasks for this date and respect calendar filters
-        const dayTasks = getTasksForDate(isoDate).filter(t => {
-            if (subjectFilter && t.subject !== subjectFilter) return false;
-            if (priorityFilter && t.priority !== priorityFilter) return false;
-            return true;
-        });
-
-        dayTasks.forEach((task, idx) => {
-            if (idx >= 6) return; // limit number of small dots shown
-            const dot = document.createElement('span');
-            dot.className = 'task-indicator small ' + getTaskCalendarClass(task);
-            dot.title = `${task.title} — ${task.subject} — ${task.priority}`;
-            indicators.appendChild(dot);
-        });
-
-        if (dayTasks.length > 6) {
-            const more = document.createElement('span');
-            more.className = 'text-xs text-gray-500';
-            more.textContent = `+${dayTasks.length - 6}`;
-            indicators.appendChild(more);
-        }
-
-        if (dayTasks.length === 0) {
-            cell.classList.add('calendar-day-empty');
-        }
-
-        cell.appendChild(indicators);
-
-        // Click to open modal with tasks for the day
-        cell.addEventListener('click', () => openCalendarDayModal(isoDate));
-
-        calendarGrid.appendChild(cell);
-    }
-
-    // Update weekly and today's completion stats
-    if (tasksWeekEl) tasksWeekEl.textContent = getTasksThisWeekCount();
-    if (todayCompletedEl) todayCompletedEl.textContent = getTodayCompletedCount();
-
-    // Update filters in case new subjects or priorities appeared
-    populateSubjectFilters();
-}
-
-// Return true if two dates share the same calendar day (YYYY-MM-DD)
-function sameDateISO(isoA, isoB) {
-    return isoA.slice(0, 10) === isoB.slice(0, 10);
-}
-
-// Get tasks due on a particular ISO date (YYYY-MM-DD)
-function getTasksForDate(isoDate) {
-    return tasks.filter(t => {
-        const dueIso = new Date(t.dueDate).toISOString().slice(0, 10);
-        return dueIso === isoDate;
-    });
-}
-
-// Determine CSS indicator class for a task based on due date and status
-function getTaskCalendarClass(task) {
-    if (!task || !task.dueDate) return 'indicator-tentative';
-
-    if (task.status === 'completed') return 'indicator-completed';
-
-    const today = new Date();
-    // normalize to midnight
-    const tMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const due = new Date(task.dueDate);
-    const dMid = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-
-    const diffDays = Math.round((dMid - tMid) / (24 * 60 * 60 * 1000));
-
-    if (dMid < tMid) {
-        // Overdue (and not completed)
-        return 'indicator-overdue';
-    }
-
-    if (diffDays === 0) return 'indicator-today';
-    if (diffDays >= 2 && diffDays <= 5) return 'indicator-due-soon';
-
-    // Distinguish newly added tasks using createdAt within last 3 days
-    try {
-        const created = task.createdAt ? new Date(task.createdAt) : null;
-        if (created) {
-            const createdDiff = Math.round((tMid - new Date(created.getFullYear(), created.getMonth(), created.getDate())) / (24 * 60 * 60 * 1000));
-            if (createdDiff <= 3) return 'indicator-new';
-        }
-    } catch (e) {
-        // ignore and fall through
-    }
-
-    // Default: tentative/flexible schedule
-    return 'indicator-tentative';
-}
-
-// Open the modal and list tasks for the selected day
-function openCalendarDayModal(isoDate) {
-    const modal = document.getElementById('calendarDayModal');
-    const modalDateEl = document.getElementById('calendarModalDate');
-    const modalList = document.getElementById('calendarModalList');
-    const subjectFilter = document.getElementById('subjectFilterModal').value;
-    const priorityFilter = document.getElementById('priorityFilterModal').value;
-
-    if (!modal || !modalList || !modalDateEl) return;
-
-    modalDateEl.textContent = new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    modalDateEl.dataset.isoDate = isoDate;
-
-    const dayTasks = getTasksForDate(isoDate).filter(t => {
-        if (subjectFilter && t.subject !== subjectFilter) return false;
-        if (priorityFilter && t.priority !== priorityFilter) return false;
-        return true;
-    });
-
-    modalList.innerHTML = '';
-
-    if (dayTasks.length === 0) {
-        modalList.innerHTML = '<p class="text-gray-500">No tasks due on this day.</p>';
-    } else {
-        dayTasks.forEach(t => {
-            const div = document.createElement('div');
-            div.className = 'bg-gray-50 p-3 rounded-lg border border-gray-200';
-            div.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h4 class="font-semibold ${t.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(t.title)}</h4>
-                        <p class="text-sm text-gray-600">${escapeHtml(t.subject)} • ${escapeHtml(t.priority)}</p>
-                        ${t.description ? `<p class="text-sm text-gray-500 mt-2">${escapeHtml(t.description)}</p>` : ''}
-                    </div>
-                    <div class="text-right flex flex-col items-end gap-2">
-                        <div class="text-sm text-gray-600">${formatDateTime(t.dueDate)}</div>
-                        <div class="flex gap-2">
-                            <button onclick="toggleTaskStatus('${t.id}')" class="text-sm text-indigo-600 hover:underline">${t.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}</button>
-                            <button onclick="editTask('${t.id}')" class="text-sm text-gray-600 hover:underline">Edit</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modalList.appendChild(div);
-        });
-    }
-
-    // Update modal filter options to match calendar filters
-    populateSubjectFilters('subjectFilterModal');
-    populatePriorityFilters('priorityFilterModal');
-
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeCalendarModal() {
-    const modal = document.getElementById('calendarDayModal');
-    if (!modal) return;
-    modal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-// Populate subject dropdowns (calendar & modal)
-function populateSubjectFilters(targetId) {
-    // Collect unique subjects
-    const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean))).sort();
-    const targets = targetId ? [document.getElementById(targetId)] : [document.getElementById('subjectFilterCalendar'), document.getElementById('subjectFilterModal')];
-
-    targets.forEach(select => {
-        if (!select) return;
-        const current = select.value || '';
-        select.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-        select.value = current;
-    });
-}
-
-// Populate priority dropdown (modal only)
-function populatePriorityFilters(targetId) {
-    const select = document.getElementById(targetId);
-    if (!select) return;
-    const current = select.value || '';
-    select.innerHTML = '<option value="">All Priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>';
-    select.value = current;
-}
-
-// Count tasks due this week (Sun-Sat current week)
-function getTasksThisWeekCount() {
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    startOfWeek.setHours(0,0,0,0);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    return tasks.filter(t => {
-        const due = new Date(t.dueDate);
-        return due >= startOfWeek && due < endOfWeek;
-    }).length;
-}
-
-// Count completed tasks today
-function getTodayCompletedCount() {
-    const today = new Date();
-    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const t1 = new Date(t0);
-    t1.setDate(t0.getDate() + 1);
-
-    return tasks.filter(t => t.status === 'completed' && new Date(t.completedAt) >= t0 && new Date(t.completedAt) < t1).length;
-}
-
-// Update calendar when tasks array is refreshed
-function updateCalendarAfterTasksChange() {
-    renderCalendar(calendarState.currentDate);
-}
-
-// Ensure calendar is initialized on DOMContentLoaded and refresh after tasks are loaded
-// Call initCalendar() in DOMContentLoaded
-if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        try {
-            initCalendar();
-        } catch (e) {
-            console.warn('Calendar init failed:', e);
-        }
-    });
-}
-
-// After tasks are loaded, re-render calendar. We'll patch loadTasks to call updateCalendarAfterTasksChange().
-
-// Monkey-patch loadTasks to also update calendar when tasks are fetched (safe - runs after load)
-const _originalLoadTasks = loadTasks;
-loadTasks = async function () {
-    await _originalLoadTasks();
-    try { updateCalendarAfterTasksChange(); } catch (e) { console.warn('Failed to update calendar after tasks load', e); }
-};
 
 // ==========================================
 // GLOBAL ERROR HANDLING
