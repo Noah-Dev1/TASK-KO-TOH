@@ -234,11 +234,7 @@ function setupEventListeners() {
         if (e.target.closest('#calendarBtn')) openCalendarModal();
     });
 
-    const prevMonthBtn = document.getElementById('prevMonth');
-    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => navigateMonth(-1));
 
-    const nextMonthBtn = document.getElementById('nextMonth');
-    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => navigateMonth(1));
 
     const closeCalendarModalBtn = document.getElementById('closeCalendarModal');
     if (closeCalendarModalBtn) closeCalendarModalBtn.addEventListener('click', closeCalendarModal);
