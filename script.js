@@ -46,6 +46,7 @@ let currentUser = null;
 let tasks = [];
 let editingTaskId = null;
 let isOnline = navigator.onLine;
+let currentCalendarDate = new Date();
 
 // ==========================================
 // DOM ELEMENTS
@@ -188,6 +189,9 @@ function showDashboard() {
 
     loadTasks();
     setupDailyEmailCheck();
+
+    // Setup calendar event listeners after dashboard is shown
+    setupCalendarEventListeners();
 }
 
 // ==========================================
@@ -224,6 +228,23 @@ function setupEventListeners() {
 
     const checkDeadlinesBtn = document.getElementById('checkDeadlinesBtn');
     if (checkDeadlinesBtn) checkDeadlinesBtn.addEventListener('click', checkDeadlines);
+
+    // Use event delegation for calendar button since it's in the dashboard
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#calendarBtn')) openCalendarModal();
+    });
+
+    const prevMonthBtn = document.getElementById('prevMonth');
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => navigateMonth(-1));
+
+    const nextMonthBtn = document.getElementById('nextMonth');
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => navigateMonth(1));
+
+    const closeCalendarModalBtn = document.getElementById('closeCalendarModal');
+    if (closeCalendarModalBtn) closeCalendarModalBtn.addEventListener('click', closeCalendarModal);
+
+    const closeTaskDetailsModalBtn = document.getElementById('closeTaskDetailsModal');
+    if (closeTaskDetailsModalBtn) closeTaskDetailsModalBtn.addEventListener('click', closeTaskDetailsModal);
 
     const closeModalBtn = document.getElementById('closeModal');
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeTaskModal);
@@ -1083,6 +1104,27 @@ function showTaskDetails(date) {
         taskDetailsModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
+}
+
+// ==========================================
+// CALENDAR EVENT LISTENERS
+// ==========================================
+
+function setupCalendarEventListeners() {
+    const calendarBtn = document.getElementById('calendarBtn');
+    if (calendarBtn) calendarBtn.addEventListener('click', openCalendarModal);
+
+    const prevMonthBtn = document.getElementById('prevMonth');
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => navigateMonth(-1));
+
+    const nextMonthBtn = document.getElementById('nextMonth');
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => navigateMonth(1));
+
+    const closeCalendarModalBtn = document.getElementById('closeCalendarModal');
+    if (closeCalendarModalBtn) closeCalendarModalBtn.addEventListener('click', closeCalendarModal);
+
+    const closeTaskDetailsModalBtn = document.getElementById('closeTaskDetailsModal');
+    if (closeTaskDetailsModalBtn) closeTaskDetailsModalBtn.addEventListener('click', closeTaskDetailsModal);
 }
 
 // ==========================================
