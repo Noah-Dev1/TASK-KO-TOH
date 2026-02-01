@@ -625,7 +625,7 @@ function renderTasks() {
                     <div class="flex-1">
                         <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h3>
                         <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.subject)}</p>
-                        ${task.description ? p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p> : ''}
+                        ${task.description ? `<p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p>` : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full priority-badge-${task.priority}">
@@ -644,7 +644,7 @@ function renderTasks() {
                     </div>
                     ${isOverdue ? '<div class="flex items-center text-sm text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i><span>This task is overdue!</span></div>' : ''}
                     ${isDueSoon ? '<div class="flex items-center text-sm text-amber-600"><i class="fas fa-clock mr-2"></i><span>Due within 24 hours!</span></div>' : ''}
-                    ${task.completedAt ? <div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div> : ''}
+                    ${task.completedAt ? `<div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div>` : ''}
                 </div>
 
                 <div class="flex justify-between items-center">
