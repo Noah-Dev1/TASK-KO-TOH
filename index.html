@@ -9,8 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Font Awesome -->
-    <!-- Updated to a widely-available CDN (jsDelivr) that hosts Font Awesome v6.4.0 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,34 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <!-- Custom CSS -->
-    <!-- Use explicit relative path and add an error hook + JS fallback to avoid a hard 404 breaking UI -->
-    <link rel="stylesheet" href="./style.css" onerror="this.onerror=null;console.error('style.css failed to load');">
-    <script>
-    (function(){
-        // If the stylesheet fails to load (404), attempt to fetch and inject it inline as a fallback
-        const l = document.querySelector('link[href="./style.css"]');
-        if(!l) return;
-        l.addEventListener('error', async () => {
-            try {
-                const res = await fetch('./style.css');
-                if (res.ok) {
-                    const css = await res.text();
-                    const s = document.createElement('style');
-                    s.textContent = css;
-                    document.head.appendChild(s);
-                    console.warn('style.css injected inline as fallback');
-                } else {
-                    console.error('style.css fetch failed with status', res.status);
-                }
-            } catch (e) {
-                console.error('style.css fallback fetch error', e);
-            }
-        }, { once: true });
-    })();
-    </script>
-
-    <!-- Favicon (inline SVG data URL to prevent /favicon.ico 404) -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='100%25' height='100%25' fill='%23676EEA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%23fff' font-family='Inter, sans-serif'%3ETK%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Loading Screen -->
@@ -223,6 +195,9 @@
                             <button id="addTaskBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-plus mr-2"></i>Add Task
                             </button>
+                            <button id="calendarBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-calendar-alt mr-2"></i>Calendar View
+                            </button>
                             <button id="checkDeadlinesBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-bell mr-2"></i>Send Email Reminders
                             </button>
@@ -241,72 +216,6 @@
                                 <option value="completed">Completed</option>
                             </select>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Calendar Section -->
-                <div id="calendarSection" class="bg-white rounded-xl shadow-sm p-6 mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Calendar</h3>
-                        <div class="flex items-center gap-2">
-                            <button id="prevMonthBtn" class="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
-                            <div id="currentMonth" class="font-medium"></div>
-                            <button id="nextMonthBtn" class="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-4 mb-3">
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-green-500"></span> Completed
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> New
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-yellow-400"></span> 2–5 days
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-orange-500"></span> Today
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span> Overdue
-                        </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="inline-block w-3 h-3 rounded-full bg-gray-400"></span> Tentative
-                        </div>
-                    </div>
-
-                    <div class="mb-3 flex items-center gap-4">
-                        <div class="flex gap-2 items-center">
-                            <label for="calSubjectFilter" class="text-sm text-gray-600">Subject:</label>
-                            <select id="calSubjectFilter" class="px-3 py-1 border rounded">
-                                <option value="">All</option>
-                            </select>
-                        </div>
-                        <div class="flex gap-2 items-center">
-                            <label for="calPriorityFilter" class="text-sm text-gray-600">Priority:</label>
-                            <select id="calPriorityFilter" class="px-3 py-1 border rounded">
-                                <option value="">All</option>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                            </select>
-                        </div>
-                        <div class="ml-auto text-sm text-gray-700">
-                            <span id="tasksThisWeek">0 tasks this week</span> • <span id="completionToday">You finished 0 tasks today!</span>
-                        </div>
-                    </div>
-
-                    <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-sm">
-                        <!-- Weekday headers -->
-                        <div class="font-semibold text-center">Sun</div>
-                        <div class="font-semibold text-center">Mon</div>
-                        <div class="font-semibold text-center">Tue</div>
-                        <div class="font-semibold text-center">Wed</div>
-                        <div class="font-semibold text-center">Thu</div>
-                        <div class="font-semibold text-center">Fri</div>
-                        <div class="font-semibold text-center">Sat</div>
-                        <!-- Day cells inserted by JS -->
                     </div>
                 </div>
 
@@ -378,33 +287,77 @@
         </div>
     </div>
 
-    <!-- Day Tasks Modal -->
-    <div id="dayTasksModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+    <!-- Calendar Modal -->
+    <div id="calendarModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 id="dayModalTitle" class="text-lg font-semibold">Tasks for <span id="dayModalDate"></span></h3>
-                    <button id="closeDayModal" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fas fa-times"></i></button>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Calendar View</h3>
+                    <button id="closeCalendarModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="mb-3 flex gap-3">
-                    <select id="dayModalSubjectFilter" class="px-3 py-1 border rounded">
-                        <option value="">All Subjects</option>
-                    </select>
-                    <select id="dayModalPriorityFilter" class="px-3 py-1 border rounded">
-                        <option value="">All Priorities</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
+                <!-- Calendar Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <button id="prevMonth" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-chevron-left mr-2"></i>Previous
+                    </button>
+                    <h4 id="calendarMonthYear" class="text-xl font-semibold text-gray-900">Month Year</h4>
+                    <button id="nextMonth" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        Next<i class="fas fa-chevron-right ml-2"></i>
+                    </button>
                 </div>
 
-                <div id="dayTasksList" class="space-y-3">
-                    <!-- tasks listed here -->
+                <!-- Calendar Grid -->
+                <div class="calendar-grid mb-6">
+                    <!-- Days of week header -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center font-semibold text-gray-600 py-2">Sun</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Mon</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Tue</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Wed</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Thu</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Fri</div>
+                        <div class="text-center font-semibold text-gray-600 py-2">Sat</div>
+                    </div>
+                    <!-- Calendar days -->
+                    <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                        <!-- Days will be dynamically inserted here -->
+                    </div>
                 </div>
 
-                <div class="mt-4 text-right">
-                    <button id="closeDayModalFooter" class="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg">Close</button>
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-indigo-200 rounded mr-2"></div>
+                        <span>Tasks Due</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-200 rounded mr-2"></div>
+                        <span>Overdue Tasks</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-200 rounded mr-2"></div>
+                        <span>Completed Tasks</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div id="taskDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Tasks for <span id="taskDetailsDate"></span></h3>
+                    <button id="closeTaskDetailsModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="taskDetailsContent">
+                    <!-- Task details will be dynamically inserted here -->
                 </div>
             </div>
         </div>
