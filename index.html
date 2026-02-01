@@ -9,7 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Updated to a widely-available CDN (jsDelivr) that hosts Font Awesome v6.4.0 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -23,7 +24,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Use explicit relative path and add an error hook + JS fallback to avoid a hard 404 breaking UI -->
+    <link rel="stylesheet" href="./style.css" onerror="this.onerror=null;console.error('style.css failed to load');">
+    <script>
+    (function(){
+        // If the stylesheet fails to load (404), attempt to fetch and inject it inline as a fallback
+        const l = document.querySelector('link[href="./style.css"]');
+        if(!l) return;
+        l.addEventListener('error', async () => {
+            try {
+                const res = await fetch('./style.css');
+                if (res.ok) {
+                    const css = await res.text();
+                    const s = document.createElement('style');
+                    s.textContent = css;
+                    document.head.appendChild(s);
+                    console.warn('style.css injected inline as fallback');
+                } else {
+                    console.error('style.css fetch failed with status', res.status);
+                }
+            } catch (e) {
+                console.error('style.css fallback fetch error', e);
+            }
+        }, { once: true });
+    })();
+    </script>
 
     <!-- Favicon (inline SVG data URL to prevent /favicon.ico 404) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='100%25' height='100%25' fill='%23676EEA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%23fff' font-family='Inter, sans-serif'%3ETK%3C/text%3E%3C/svg%3E">
