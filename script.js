@@ -983,12 +983,13 @@ function renderCalendar() {
     // Generate calendar days
     const currentDate = new Date(startDate);
     for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+        const dayDate = new Date(currentDate); // Create a copy for this day
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day p-2 border border-gray-200 min-h-[80px] cursor-pointer hover:bg-gray-50 transition-colors';
 
-        const dayNumber = currentDate.getDate();
-        const isCurrentMonth = currentDate.getMonth() === currentCalendarDate.getMonth();
-        const isToday = currentDate.toDateString() === new Date().toDateString();
+        const dayNumber = dayDate.getDate();
+        const isCurrentMonth = dayDate.getMonth() === currentCalendarDate.getMonth();
+        const isToday = dayDate.toDateString() === new Date().toDateString();
 
         // Add day number
         const dayNumberDiv = document.createElement('div');
@@ -997,7 +998,7 @@ function renderCalendar() {
         dayDiv.appendChild(dayNumberDiv);
 
         // Add tasks for this day
-        const dayTasks = getTasksForDate(currentDate);
+        const dayTasks = getTasksForDate(dayDate);
         if (dayTasks.length > 0) {
             const tasksDiv = document.createElement('div');
             tasksDiv.className = 'space-y-1';
@@ -1025,7 +1026,7 @@ function renderCalendar() {
             dayDiv.appendChild(tasksDiv);
 
             // Make clickable if there are tasks
-            dayDiv.onclick = () => showTaskDetails(currentDate);
+            dayDiv.onclick = () => showTaskDetails(dayDate);
         }
 
         calendarDays.appendChild(dayDiv);
