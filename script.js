@@ -57,6 +57,8 @@ const dashboardScreen = document.getElementById('dashboardScreen');
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const taskModal = document.getElementById('taskModal');
+const calendarModal = document.getElementById('calendarModal');
+const taskDetailsModal = document.getElementById('taskDetailsModal');
 const tasksContainer = document.getElementById('tasksContainer');
 const emptyState = document.getElementById('emptyState');
 
@@ -254,8 +256,6 @@ function setupEventListeners() {
             if (currentUser) openTaskModal();
         }
     });
-    // initialize calendar UI
-    if (typeof initCalendar === 'function') initCalendar();
 }
 
 // ==========================================
@@ -625,7 +625,7 @@ function renderTasks() {
                     <div class="flex-1">
                         <h3 class="text-lg font-semibold text-gray-900 mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h3>
                         <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.subject)}</p>
-                        ${task.description ? `<p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p>` : ''}
+                        ${task.description ? <p class="text-sm text-gray-500 mb-3">${escapeHtml(task.description)}</p> : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full priority-badge-${task.priority}">
@@ -644,7 +644,7 @@ function renderTasks() {
                     </div>
                     ${isOverdue ? '<div class="flex items-center text-sm text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i><span>This task is overdue!</span></div>' : ''}
                     ${isDueSoon ? '<div class="flex items-center text-sm text-amber-600"><i class="fas fa-clock mr-2"></i><span>Due within 24 hours!</span></div>' : ''}
-                    ${task.completedAt ? `<div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div>` : ''}
+                    ${task.completedAt ? <div class="flex items-center text-sm text-green-600 mt-2"><i class="fas fa-check mr-2"></i><span>Completed: ${formatDateTime(task.completedAt)}</span></div> : ''}
                 </div>
 
                 <div class="flex justify-between items-center">
@@ -664,9 +664,6 @@ function renderTasks() {
             </div>
         `;
     }).join('');
-    // Update calendar whenever tasks change or filter applied
-    if (typeof renderTasksOnCalendar === 'function') renderTasksOnCalendar();
-    if (typeof updateCalendarSummary === 'function') updateCalendarSummary();
 }
 
 // Helper to avoid XSS in inserted HTML
@@ -745,233 +742,6 @@ function updateStatistics() {
     if (pendingEl) pendingEl.textContent = pending;
     if (overdueEl) overdueEl.textContent = overdue;
 }
-
-// ==========================================
-// CALENDAR VIEW
-// ==========================================
-
-let calendarDate = new Date();
-
-// Initialize calendar UI, populate filters and attach events
-function initCalendar() {
-    const prevBtn = document.getElementById('prevMonthBtn');
-    const nextBtn = document.getElementById('nextMonthBtn');
-    const subjectFilter = document.getElementById('calSubjectFilter');
-    const priorityFilter = document.getElementById('calPriorityFilter');
-
-    if (prevBtn) prevBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); createCalendar(calendarDate); renderTasksOnCalendar(); });
-    if (nextBtn) nextBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); createCalendar(calendarDate); renderTasksOnCalendar(); });
-
-    if (subjectFilter) subjectFilter.addEventListener('change', () => renderTasksOnCalendar());
-    if (priorityFilter) priorityFilter.addEventListener('change', () => renderTasksOnCalendar());
-
-    // Day modal controls
-    const closeDay = document.getElementById('closeDayModal');
-    const closeDayFooter = document.getElementById('closeDayModalFooter');
-    const dayModal = document.getElementById('dayTasksModal');
-    if (closeDay) closeDay.addEventListener('click', () => { if (dayModal) dayModal.classList.add('hidden'); });
-    if (closeDayFooter) closeDayFooter.addEventListener('click', () => { if (dayModal) dayModal.classList.add('hidden'); });
-
-    // Modal filter controls (re-render day list when changed)
-    const dayModalSubject = document.getElementById('dayModalSubjectFilter');
-    const dayModalPriority = document.getElementById('dayModalPriorityFilter');
-    if (dayModalSubject) dayModalSubject.addEventListener('change', () => { const d = dayModal?.dataset?.date; if (d) showDayTasks(d); });
-    if (dayModalPriority) dayModalPriority.addEventListener('change', () => { const d = dayModal?.dataset?.date; if (d) showDayTasks(d); });
-
-    // populate subject filters initially
-    populateCalendarFilters();
-
-    createCalendar(calendarDate);
-    renderTasksOnCalendar();
-    updateCalendarSummary();
-}
-
-// Build the calendar grid for the given date (month)
-function createCalendar(date) {
-    const grid = document.getElementById('calendarGrid');
-    const currentMonthEl = document.getElementById('currentMonth');
-    if (!grid || !currentMonthEl) return;
-
-    // Clear previous day cells (keep the 7 weekday headers)
-    grid.querySelectorAll('.day-cell')?.forEach(n => n.remove());
-
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    currentMonthEl.textContent = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-    const firstOfMonth = new Date(year, month, 1);
-    const startDay = firstOfMonth.getDay(); // 0=Sun
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Ensure 6 rows of 7 (42 cells) to keep layout stable
-    const totalCells = 42;
-    const firstCellDate = new Date(year, month, 1 - startDay);
-
-    for (let i = 0; i < totalCells; i++) {
-        const cellDate = new Date(firstCellDate);
-        cellDate.setDate(firstCellDate.getDate() + i);
-        const day = cellDate.getDate();
-        const isOtherMonth = cellDate.getMonth() !== month;
-        const cell = document.createElement('div');
-        cell.className = 'day-cell p-2';
-        if (isOtherMonth) cell.classList.add('other-month');
-        cell.dataset.date = cellDate.toISOString().slice(0,10);
-
-        const dayNumber = document.createElement('div');
-        dayNumber.className = 'day-number text-right text-sm';
-        dayNumber.textContent = day;
-        cell.appendChild(dayNumber);
-
-        const indicators = document.createElement('div');
-        indicators.className = 'indicators';
-        cell.appendChild(indicators);
-
-        cell.addEventListener('click', () => {
-            showDayTasks(cell.dataset.date);
-        });
-
-        grid.appendChild(cell);
-    }
-}
-
-// Render tasks as small color indicators on calendar cells
-function renderTasksOnCalendar() {
-    const grid = document.getElementById('calendarGrid');
-    if (!grid) return;
-
-    // Clear existing indicators
-    grid.querySelectorAll('.day-cell .indicators').forEach(el => el.innerHTML = '');
-
-    // apply filters
-    const subjectFilter = document.getElementById('calSubjectFilter')?.value || '';
-    const priorityFilter = document.getElementById('calPriorityFilter')?.value || '';
-
-    tasks.forEach(task => {
-        // skip tasks without due date
-        if (!task.dueDate) return;
-        const dueDateStr = new Date(task.dueDate).toISOString().slice(0,10);
-        if (subjectFilter && task.subject !== subjectFilter) return;
-        if (priorityFilter && task.priority !== priorityFilter) return;
-
-        const cell = grid.querySelector(`.day-cell[data-date="${dueDateStr}"]`);
-        if (!cell) return;
-
-        const dot = document.createElement('span');
-        const colorClass = getColorClassForTask(task);
-        dot.className = `task-indicator ${colorClass}`;
-        dot.title = `${task.title} • ${task.subject} • ${formatDateTime(task.dueDate)}`;
-
-        cell.querySelector('.indicators')?.appendChild(dot);
-    });
-
-    // refresh subject lists and summary
-    populateCalendarFilters();
-    populateModalFilters();
-    updateCalendarSummary();
-}
-
-// Return color class for a task based on rules
-function getColorClassForTask(task) {
-    const now = new Date();
-    // normalize to local date for day comparison
-    const due = new Date(new Date(task.dueDate).toDateString());
-    const today = new Date(new Date().toDateString());
-    const diffDays = Math.round((due - today) / (24 * 60 * 60 * 1000));
-
-    if (task.status === 'completed') return 'indicator-green';
-    if (task.status === 'tentative') return 'indicator-gray';
-    if (diffDays < 0 && task.status !== 'completed') return 'indicator-red';
-    if (diffDays === 0) return 'indicator-orange';
-    if (diffDays >= 2 && diffDays <= 5) return 'indicator-yellow';
-    return 'indicator-blue';
-}
-
-// Show modal with tasks for the selected day
-function showDayTasks(dateStr) {
-    const dayModal = document.getElementById('dayTasksModal');
-    const dayModalDate = document.getElementById('dayModalDate');
-    const dayTasksList = document.getElementById('dayTasksList');
-    const subjectFilter = document.getElementById('dayModalSubjectFilter');
-    const priorityFilter = document.getElementById('dayModalPriorityFilter');
-
-    if (!dayModal || !dayModalDate || !dayTasksList) return;
-
-    dayModal.classList.remove('hidden');
-    dayModalDate.textContent = new Date(dateStr).toLocaleDateString();
-    // store ISO date for modal filters to reference
-    dayModal.dataset.date = dateStr;
-
-    // populate filter dropdowns
-    populateModalFilters();
-
-    const subVal = subjectFilter ? subjectFilter.value : '';
-    const priVal = priorityFilter ? priorityFilter.value : '';
-
-    const todaysTasks = tasks.filter(t => {
-        const tDate = new Date(new Date(t.dueDate).toISOString().slice(0,10));
-        return tDate.toISOString().slice(0,10) === dateStr &&
-            (subVal ? t.subject === subVal : true) &&
-            (priVal ? t.priority === priVal : true);
-    });
-
-    dayTasksList.innerHTML = todaysTasks.map(t => `
-        <div class="p-3 border rounded-lg flex justify-between items-start">
-            <div>
-                <div class="font-medium ${t.status === 'completed' ? 'day-task-title completed' : ''}">${escapeHtml(t.title)}</div>
-                <div class="text-sm text-gray-500">${escapeHtml(t.subject)} • ${formatDateTime(t.dueDate)}</div>
-            </div>
-            <div class="flex flex-col items-end space-y-2">
-                <button onclick="toggleTaskStatus('${t.id}')" class="text-sm text-indigo-600">${t.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}</button>
-                <div class="flex space-x-2">
-                    <button onclick="editTask('${t.id}')" class="text-sm text-indigo-600">Edit</button>
-                    <button onclick="deleteTask('${t.id}')" class="text-sm text-red-600">Delete</button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function populateCalendarFilters() {
-    const subjectEl = document.getElementById('calSubjectFilter');
-    if (!subjectEl) return;
-    const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean)));
-    subjectEl.innerHTML = '<option value="">All</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-}
-
-function populateModalFilters() {
-    const subj = document.getElementById('dayModalSubjectFilter');
-    if (!subj) return;
-    const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean)));
-    subj.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-}
-
-function updateCalendarSummary() {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
-    startOfWeek.setHours(0,0,0,0);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-    const tasksThisWeek = tasks.filter(t => {
-        const d = new Date(new Date(t.dueDate).toISOString().slice(0,10));
-        return d >= startOfWeek && d <= endOfWeek;
-    }).length;
-
-    const completedToday = tasks.filter(t => {
-        const d = new Date(new Date(t.dueDate).toISOString().slice(0,10));
-        const isToday = d.toISOString().slice(0,10) === new Date().toISOString().slice(0,10);
-        return isToday && t.status === 'completed';
-    }).length;
-
-    const e = document.getElementById('tasksThisWeek');
-    const f = document.getElementById('completionToday');
-    if (e) e.textContent = `${tasksThisWeek} task${tasksThisWeek !== 1 ? 's' : ''} this week`;
-    if (f) f.textContent = `You finished ${completedToday} task${completedToday !== 1 ? 's' : ''} today!`;
-}
-
-
 
 // ==========================================
 // EMAIL NOTIFICATIONS (EmailJS)
@@ -1140,6 +910,179 @@ function showToast(type, title, message) {
     setTimeout(() => {
         toast.style.transform = 'translateX(100%)';
     }, 5000);
+}
+
+// ==========================================
+// CALENDAR
+// ==========================================
+
+function openCalendarModal() {
+    if (calendarModal) {
+        calendarModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        renderCalendar();
+    }
+}
+
+function closeCalendarModal() {
+    if (calendarModal) {
+        calendarModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function closeTaskDetailsModal() {
+    if (taskDetailsModal) {
+        taskDetailsModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function navigateMonth(direction) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const calendarDays = document.getElementById('calendarDays');
+    const calendarMonthYear = document.getElementById('calendarMonthYear');
+
+    if (!calendarDays || !calendarMonthYear) return;
+
+    // Update month/year header
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    calendarMonthYear.textContent = `${monthNames[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}`;
+
+    // Clear previous calendar
+    calendarDays.innerHTML = '';
+
+    // Get first day of month and last day of month
+    const firstDay = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), 1);
+    const lastDay = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+
+    // Generate calendar days
+    const currentDate = new Date(startDate);
+    for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day p-2 border border-gray-200 min-h-[80px] cursor-pointer hover:bg-gray-50 transition-colors';
+
+        const dayNumber = currentDate.getDate();
+        const isCurrentMonth = currentDate.getMonth() === currentCalendarDate.getMonth();
+        const isToday = currentDate.toDateString() === new Date().toDateString();
+
+        // Add day number
+        const dayNumberDiv = document.createElement('div');
+        dayNumberDiv.className = `text-sm font-medium mb-1 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'} ${isToday ? 'bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`;
+        dayNumberDiv.textContent = dayNumber;
+        dayDiv.appendChild(dayNumberDiv);
+
+        // Add tasks for this day
+        const dayTasks = getTasksForDate(currentDate);
+        if (dayTasks.length > 0) {
+            const tasksDiv = document.createElement('div');
+            tasksDiv.className = 'space-y-1';
+
+            dayTasks.slice(0, 3).forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `text-xs p-1 rounded truncate ${
+                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                }`;
+                taskDiv.textContent = task.title;
+                taskDiv.title = task.title; // Full title on hover
+                tasksDiv.appendChild(taskDiv);
+            });
+
+            if (dayTasks.length > 3) {
+                const moreDiv = document.createElement('div');
+                moreDiv.className = 'text-xs text-gray-500 text-center';
+                moreDiv.textContent = `+${dayTasks.length - 3} more`;
+                tasksDiv.appendChild(moreDiv);
+            }
+
+            dayDiv.appendChild(tasksDiv);
+
+            // Make clickable if there are tasks
+            dayDiv.onclick = () => showTaskDetails(currentDate);
+        }
+
+        calendarDays.appendChild(dayDiv);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+}
+
+function getTasksForDate(date) {
+    const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return tasks.filter(task => {
+        const taskDate = new Date(task.dueDate).toISOString().split('T')[0];
+        return taskDate === dateString;
+    });
+}
+
+function showTaskDetails(date) {
+    const dayTasks = getTasksForDate(date);
+    const taskDetailsDate = document.getElementById('taskDetailsDate');
+    const taskDetailsContent = document.getElementById('taskDetailsContent');
+
+    if (!taskDetailsDate || !taskDetailsContent) return;
+
+    // Format date for display
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    taskDetailsDate.textContent = date.toLocaleDateString('en-US', options);
+
+    if (dayTasks.length === 0) {
+        taskDetailsContent.innerHTML = '<p class="text-gray-500 text-center">No tasks for this date</p>';
+    } else {
+        taskDetailsContent.innerHTML = dayTasks.map(task => {
+            const dueDate = new Date(task.dueDate);
+            const now = new Date();
+            const isOverdue = dueDate < now && task.status === 'pending';
+
+            return `
+                <div class="bg-white rounded-lg border border-gray-200 p-4 mb-3">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-gray-900 ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">${escapeHtml(task.title)}</h4>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                            task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                        }">
+                            ${task.status === 'completed' ? 'COMPLETED' : task.priority.toUpperCase()}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-1">${escapeHtml(task.subject)}</p>
+                    ${task.description ? `<p class="text-sm text-gray-500 mb-2">${escapeHtml(task.description)}</p>` : ''}
+                    <div class="flex items-center text-sm text-gray-600 mb-2">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span>Due: ${formatDateTime(task.dueDate)}</span>
+                    </div>
+                    ${isOverdue ? '<div class="flex items-center text-sm text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i><span>Overdue!</span></div>' : ''}
+                    <div class="flex justify-end space-x-2 mt-3">
+                        <button onclick="editTask('${task.id}'); closeTaskDetailsModal(); closeCalendarModal();" class="text-indigo-600 hover:text-indigo-700 text-sm transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="toggleTaskStatus('${task.id}'); closeTaskDetailsModal(); renderCalendar();" class="text-sm transition-colors ${
+                            task.status === 'completed' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
+                        }">
+                            <i class="fas ${task.status === 'completed' ? 'fa-undo' : 'fa-check-circle'} mr-1"></i>
+                            ${task.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (taskDetailsModal) {
+        taskDetailsModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 // ==========================================
