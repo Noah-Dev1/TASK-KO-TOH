@@ -665,7 +665,7 @@ function renderTasks() {
                 </div>
 
                 <div class="flex justify-between items-center">
-                    <button onclick="toggleTaskStatus('${task.id}')" class="flex items-center text-sm ${task.status === 'completed' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'} transition-colors">
+<button onclick="toggleTaskStatus('${task.id}')" class="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${task.status === 'completed' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105' : 'bg-green-600 text-white hover:bg-green-700 hover:scale-105 shadow-md hover:shadow-lg'}">
                         <i class="fas ${task.status === 'completed' ? 'fa-undo' : 'fa-check-circle'} mr-2"></i>
                         ${task.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
                     </button>
@@ -1085,9 +1085,7 @@ function showTaskDetails(date) {
                         <button onclick="editTask('${task.id}'); closeTaskDetailsModal(); closeCalendarModal();" class="text-indigo-600 hover:text-indigo-700 text-sm transition-colors">
                             <i class="fas fa-edit mr-1"></i>Edit
                         </button>
-                        <button onclick="toggleTaskStatus('${task.id}'); closeTaskDetailsModal(); renderCalendar();" class="text-sm transition-colors ${
-                            task.status === 'completed' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
-                        }">
+<button onclick="toggleTaskStatus('${task.id}'); closeTaskDetailsModal(); renderCalendar();" class="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${task.status === 'completed' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105' : 'bg-green-600 text-white hover:bg-green-700 hover:scale-105 shadow-sm hover:shadow-md'}">
                             <i class="fas ${task.status === 'completed' ? 'fa-undo' : 'fa-check-circle'} mr-1"></i>
                             ${task.status === 'completed' ? 'Mark Pending' : 'Mark Complete'}
                         </button>
