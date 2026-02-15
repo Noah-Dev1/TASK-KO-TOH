@@ -1,7 +1,16 @@
-
 body {
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
+}
+
+/* Logo Circle Outline */
+.logo-circle {
+    border: 2px solid #4f46e5; /* indigo-600 */
+    border-radius: 50%;
+    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Task Card Animations */
@@ -92,6 +101,23 @@ body {
 .priority-badge-low {
     background-color: #dcfce7;
     color: #16a34a;
+}
+
+/* Subject Badges */
+.subject-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Subject Color Border for Task Cards */
+.task-card.subject-colored {
+    border-left-width: 4px;
 }
 
 /* Toast Notification */
@@ -298,5 +324,415 @@ input:valid {
         break-inside: avoid;
         border: 1px solid #ccc !important;
         margin-bottom: 1rem;
+    }
+}
+
+/* =========================================
+   CUSTOM STYLES FOR TASK KO TO!
+   ========================================= */
+
+/* =========================================
+   SUBJECT COLOR STYLES
+   ========================================= */
+
+/* Subject badge with color */
+.subject-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    margin-right: 8px;
+}
+
+/* Task card with colored left border */
+.task-card {
+    border-left: 4px solid transparent !important;
+    transition: all 0.2s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* =========================================
+   PRIORITY SCORE BADGES
+   ========================================= */
+
+/* Priority Score Badge Styles */
+.priority-score-critical {
+    background-color: #FEE2E2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+.priority-score-high {
+    background-color: #FFEDD5;
+    color: #EA580C;
+    border: 1px solid #FED7AA;
+}
+
+.priority-score-normal {
+    background-color: #D1FAE5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+
+/* =========================================
+   STUDY LOAD WARNING BANNER
+   ========================================= */
+
+#studyLoadBanner {
+    transition: all 0.3s ease;
+}
+
+/* Warning state (3-4 tasks due tomorrow) */
+#studyLoadBanner.warning {
+    background-color: #FEF3C7;
+    border-color: #F59E0B;
+    color: #92400E;
+}
+
+#studyLoadBanner.warning #studyLoadIcon {
+    color: #F59E0B;
+}
+
+/* Danger state (5+ tasks due tomorrow) */
+#studyLoadBanner.danger {
+    background-color: #FEE2E2;
+    border-color: #EF4444;
+    color: #991B1B;
+}
+
+#studyLoadBanner.danger #studyLoadIcon {
+    color: #EF4444;
+}
+
+/* =========================================
+   ANALYTICS DASHBOARD STYLES
+   ========================================= */
+
+.analytics-section {
+    margin-bottom: 2rem;
+}
+
+.analytics-card {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E5E7EB;
+    padding: 1.5rem;
+}
+
+.analytics-stat {
+    text-align: center;
+    padding: 1rem;
+}
+
+.analytics-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.analytics-stat-label {
+    font-size: 0.875rem;
+    color: #6B7280;
+    margin-top: 0.25rem;
+}
+
+.analytics-chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* =========================================
+   ENGAGING COMPLETION RATE DISPLAY
+   ========================================= */
+
+/* Completion Rate Container */
+.completion-rate-container {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+}
+
+/* SVG Circular Progress */
+.completion-rate-svg {
+    width: 140px;
+    height: 140px;
+    transform: rotate(-90deg);
+}
+
+/* Background circle */
+.completion-rate-bg {
+    fill: none;
+    stroke: #E5E7EB;
+    stroke-width: 10;
+}
+
+/* Progress circle */
+.completion-rate-progress {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease-in-out, stroke 0.5s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Inner circle with percentage */
+.completion-rate-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Percentage text */
+.completion-rate-percent {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    transition: color 0.3s ease;
+}
+
+/* Label text */
+.completion-rate-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    color: #6B7280;
+}
+
+/* Icon container */
+.completion-rate-icon {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+    transition: transform 0.3s ease;
+}
+
+/* Pulse animation for the progress circle */
+@keyframes completionPulse {
+    0%, 100% {
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+    50% {
+        filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
+    }
+}
+
+.completion-rate-progress.pulsing {
+    animation: completionPulse 2s infinite;
+}
+
+/* Celebration animation - particles */
+@keyframes celebrateParticle {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+}
+
+.completion-celebration {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.completion-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particleBurst 1s ease-out forwards;
+}
+
+@keyframes particleBurst {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(1);
+    }
+}
+
+/* Color variants */
+.completion-rate-low {
+    color: #EF4444;
+}
+
+.completion-rate-medium {
+    color: #F59E0B;
+}
+
+.completion-rate-high {
+    color: #10B981;
+}
+
+/* Glow effect for high completion */
+.completion-rate-glow {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+}
+
+/* Smooth entrance animation */
+@keyframes completionEnter {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.completion-rate-container.animate {
+    animation: completionEnter 0.6s ease-out forwards;
+}
+
+/* Ring shadow effect */
+.completion-rate-shadow {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+/* =========================================
+   TASK CARD ENHANCEMENTS
+   ========================================= */
+
+/* Task card priority border colors */
+.task-card.priority-high {
+    border-left-color: #EF4444 !important;
+}
+
+.task-card.priority-medium {
+    border-left-color: #F59E0B !important;
+}
+
+.task-card.priority-low {
+    border-left-color: #10B981 !important;
+}
+
+/* Overdue task styling */
+.task-card.overdue {
+    background-color: #FEF2F2;
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================= */
+
+@media (max-width: 768px) {
+    .analytics-chart-container {
+        height: 250px;
+    }
+    
+    .completion-rate-circle {
+        width: 100px;
+        height: 100px;
+        font-size: 1.25rem;
+    }
+}
+
+/* =========================================
+   OFFLINE INDICATOR
+   ========================================= */
+
+.offline-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background-color: #EF4444;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.offline-indicator.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* =========================================
+   LOADING ANIMATIONS
+   ========================================= */
+
+.loading-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
     }
 }
