@@ -22,6 +22,9 @@
     <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -29,7 +32,7 @@
     <!-- Loading Screen -->
     <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
-            <i class="fas fa-graduation-cap text-indigo-600 text-6xl mb-4 animate-pulse"></i>
+            <i class="fas fa-graduation-cap text-indigo-600 text-6xl mb-4 animate-pulse logo-circle"></i>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">Task Ko To!</h2>
             <div class="flex items-center justify-center space-x-1">
                 <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
@@ -44,7 +47,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <i class="fas fa-graduation-cap text-indigo-600 text-2xl mr-3"></i>
+                    <i class="fas fa-graduation-cap text-indigo-600 text-2xl mr-3 logo-circle"></i>
                     <h1 class="text-xl font-bold text-gray-900">Task Ko To!</h1>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -64,7 +67,7 @@
             <div class="max-w-md w-full mx-4">
                 <div class="bg-white rounded-xl shadow-lg p-8">
                     <div class="text-center mb-8">
-                        <i class="fas fa-graduation-cap text-indigo-600 text-4xl mb-4"></i>
+                        <i class="fas fa-graduation-cap text-indigo-600 text-4xl mb-4 logo-circle"></i>
                         <h2 class="text-3xl font-bold text-gray-900">Task Ko To!</h2>
                         <p class="text-gray-600 mt-2">Your School Work Reminder</p>
                     </div>
@@ -140,8 +143,19 @@
                     <p class="text-gray-600">Manage your school tasks and stay on top of deadlines</p>
                 </div>
 
+                <!-- Study Load Warning Banner -->
+                <div id="studyLoadBanner" class="hidden mb-6 p-4 rounded-lg border-l-4 shadow-sm">
+                    <div class="flex items-center">
+                        <i id="studyLoadIcon" class="mr-3 text-xl"></i>
+                        <div>
+                            <p id="studyLoadTitle" class="font-semibold"></p>
+                            <p id="studyLoadMessage" class="text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Statistics Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                         <div class="flex items-center">
                             <div class="p-3 rounded-full bg-indigo-100">
@@ -186,6 +200,65 @@
                             </div>
                         </div>
                     </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 due-this-week-card cursor-pointer hover:shadow-md transition-shadow" onclick="openSubjectStatsModal()">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100">
+                                <i class="fas fa-calendar-week text-purple-600 text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Due This Week</p>
+                                <div id="dueThisWeekSubjects" class="text-sm font-bold text-gray-900 due-this-week-subjects">
+                                    <!-- Subjects due this week will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-purple-600 flex items-center">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <span>Click for details</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Analytics Row (New!) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Top Subject Card -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow" onclick="filterBySubject('top')">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="p-2 rounded-lg bg-indigo-100">
+                                <i class="fas fa-star text-indigo-600"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Most Tasks</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Top Subject</p>
+                        <p id="topSubject" class="text-xl font-bold text-gray-900 truncate">-</p>
+                        <p id="topSubjectCount" class="text-sm text-gray-500 mt-1">0 tasks</p>
+                    </div>
+
+                    <!-- Most Urgent Subject Card -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow" onclick="filterBySubject('urgent')">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="p-2 rounded-lg bg-red-100">
+                                <i class="fas fa-fire text-red-600"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Needs Attention</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Most Urgent</p>
+                        <p id="urgentSubject" class="text-xl font-bold text-gray-900 truncate">-</p>
+                        <p id="urgentSubjectCount" class="text-sm text-gray-500 mt-1">0 overdue/urgent</p>
+                    </div>
+
+                    <!-- Subject Breakdown Card -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow" onclick="openSubjectStatsModal()">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="p-2 rounded-lg bg-cyan-100">
+                                <i class="fas fa-chart-pie text-cyan-600"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Overview</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">All Subjects</p>
+                        <p id="totalSubjects" class="text-xl font-bold text-gray-900">0</p>
+                        <p class="text-sm text-gray-500 mt-1">subjects with tasks</p>
+                    </div>
                 </div>
 
                 <!-- Controls -->
@@ -204,6 +277,9 @@
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4">
                             <input type="text" id="searchInput" placeholder="Search tasks..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <select id="subjectFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Subjects</option>
+                            </select>
                             <select id="priorityFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="">All Priorities</option>
                                 <option value="high">High Priority</option>
@@ -213,6 +289,7 @@
                             <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="">All Status</option>
                                 <option value="pending">Pending</option>
+                                <option value="overdue">Overdue</option>
                                 <option value="completed">Completed</option>
                             </select>
                         </div>
@@ -358,6 +435,35 @@
                 </div>
                 <div id="taskDetailsContent">
                     <!-- Task details will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Stats Modal (New!) -->
+    <div id="subjectStatsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-chart-pie text-indigo-600 mr-2"></i>Subject Analytics
+                    </h3>
+                    <button id="closeSubjectStatsModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Subject Stats Content -->
+                <div id="subjectStatsContent">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                
+                <!-- Subject List -->
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-4">All Subjects</h4>
+                    <div id="subjectList" class="space-y-3">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
