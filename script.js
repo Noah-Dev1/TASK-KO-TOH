@@ -436,12 +436,18 @@ async function handleRegister(e) {
         return;
     }
 
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const grade = document.getElementById('registerGrade').value;
-    const password = document.getElementById('registerPassword').value;
+const name = document.getElementById('registerName').value.trim();
+const email = document.getElementById('registerEmail').value.trim();
+const grade = document.getElementById('registerGrade').value;
+const password = document.getElementById('registerPassword').value;
+const privacyConsent = document.getElementById('privacyConsent').checked;
 
-    if (name.length < 2) {
+if (!privacyConsent) {
+    showToast('error', 'Privacy Consent Required', 'Please agree to show your personal tasks on your profile');
+    return;
+}
+
+if (name.length < 2) {
         showToast('error', 'Invalid Name', 'Name must be at least 2 characters');
         return;
     }
