@@ -328,11 +328,11 @@ input:valid {
 }
 
 /* =========================================
-   CUSTOM STYLES FOR TASK KO TO!
+CUSTOM STYLES FOR TASK KO TO!
    ========================================= */
 
 /* =========================================
-   SUBJECT COLOR STYLES
+SUBJECT COLOR STYLES
    ========================================= */
 
 /* Subject badge with color */
@@ -359,7 +359,7 @@ input:valid {
 }
 
 /* =========================================
-   PRIORITY SCORE BADGES
+PRIORITY SCORE BADGES
    ========================================= */
 
 /* Priority Score Badge Styles */
@@ -382,7 +382,7 @@ input:valid {
 }
 
 /* =========================================
-   STUDY LOAD WARNING BANNER
+STUDY LOAD WARNING BANNER
    ========================================= */
 
 #studyLoadBanner {
@@ -412,7 +412,7 @@ input:valid {
 }
 
 /* =========================================
-   ANALYTICS DASHBOARD STYLES
+ANALYTICS DASHBOARD STYLES
    ========================================= */
 
 .analytics-section {
@@ -451,7 +451,7 @@ input:valid {
 }
 
 /* =========================================
-   ENGAGING COMPLETION RATE DISPLAY
+ENGAGING COMPLETION RATE DISPLAY
    ========================================= */
 
 /* Completion Rate Container */
@@ -630,7 +630,7 @@ input:valid {
 }
 
 /* =========================================
-   TASK CARD ENHANCEMENTS
+TASK CARD ENHANCEMENTS
    ========================================= */
 
 /* Task card priority border colors */
@@ -652,7 +652,7 @@ input:valid {
 }
 
 /* =========================================
-   ANIMATIONS
+ANIMATIONS
    ========================================= */
 
 @keyframes slideIn {
@@ -682,7 +682,7 @@ input:valid {
 }
 
 /* =========================================
-   RESPONSIVE ADJUSTMENTS
+RESPONSIVE ADJUSTMENTS
    ========================================= */
 
 @media (max-width: 768px) {
@@ -698,7 +698,7 @@ input:valid {
 }
 
 /* =========================================
-   OFFLINE INDICATOR
+OFFLINE INDICATOR
    ========================================= */
 
 .offline-indicator {
@@ -721,7 +721,7 @@ input:valid {
 }
 
 /* =========================================
-   LOADING ANIMATIONS
+LOADING ANIMATIONS
    ========================================= */
 
 .loading-pulse {
@@ -735,4 +735,140 @@ input:valid {
     50% {
         opacity: 0.5;
     }
+}
+
+/* =========================================
+TIMER STYLES
+   ========================================= */
+
+/* Timer Circle */
+.timer-circle {
+    position: relative;
+    width: 180px;
+    height: 180px;
+}
+
+.timer-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.timer-bg-circle {
+    fill: none;
+    stroke: #E5E7EB;
+    stroke-width: 8;
+}
+
+.timer-progress-circle {
+    fill: none;
+    stroke: #8B5CF6;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 565.48;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+}
+
+.timer-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.timer-display span {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #1F2937;
+}
+
+#timerSeparator {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Timer Mode Styles */
+.timer-mode-work {
+    background-color: #EDE9FE;
+    color: #7C3AED;
+}
+
+.timer-mode-break {
+    background-color: #D1FAE5;
+    color: #059669;
+}
+
+.timer-mode-paused {
+    background-color: #FEF3C7;
+    color: #D97706;
+}
+
+/* Floating Timer */
+#floatingTimer {
+    min-width: 160px;
+    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+}
+
+#floatingTimer.hidden {
+    display: none;
+}
+
+.timer-icon-container {
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Timer Button in Controls */
+#timerBtn {
+    background-color: #8B5CF6;
+}
+
+#timerBtn:hover {
+    background-color: #7C3AED;
+}
+
+/* Timer Progress Animation */
+.timer-progress-pulse {
+    animation: timerPulse 2s infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
+    }
+}
+
+/* Timer Complete Animation */
+@keyframes timerComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.timer-complete {
+    animation: timerComplete 0.5s ease-in-out;
 }
