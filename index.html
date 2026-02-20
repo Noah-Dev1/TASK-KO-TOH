@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Task Ko To! - School Work Reminder</title>
 
-     <!-- Tailwind CSS (CDN for development) -->
+    <!-- Tailwind CSS (CDN for development) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Font Awesome -->
@@ -218,7 +218,7 @@
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Due This Week</p>
                                 <div id="dueThisWeekSubjects" class="text-sm font-bold text-gray-900 due-this-week-subjects">
-                                    <!-- Subjects due this week will be populated here -->
+                                    <!-- Subjects due this week will be here -->
                                 </div>
                             </div>
                         </div>
@@ -229,7 +229,7 @@
                     </div>
                 </div>
 
-                <!-- Subject Analytics Row (New!) -->
+                <!-- Subject Analytics Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <!-- Top Subject Card -->
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow" onclick="filterBySubject('top')">
@@ -284,6 +284,9 @@
                             <button id="checkDeadlinesBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-bell mr-2"></i>Send Email Reminders
                             </button>
+                            <button id="timerBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-clock mr-2"></i>Focus Timer
+                            </button>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4">
                             <input type="text" id="searchInput" placeholder="Search tasks..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -308,7 +311,7 @@
 
                 <!-- Tasks Container -->
                 <div id="tasksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Tasks will be dynamically inserted here -->
+                    <!-- Tasks will be inserted here -->
                 </div>
 
                 <!-- Empty State -->
@@ -410,7 +413,7 @@
                     </div>
                     <!-- Calendar days -->
                     <div id="calendarDays" class="grid grid-cols-7 gap-1">
-                        <!-- Days will be dynamically inserted here -->
+                        <!-- Days will be inserted here -->
                     </div>
                 </div>
 
@@ -444,13 +447,13 @@
                     </button>
                 </div>
                 <div id="taskDetailsContent">
-                    <!-- Task details will be dynamically inserted here -->
+                    <!-- Task details will be inserted here -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Subject Stats Modal (New!) -->
+    <!-- Subject Stats Modal -->
     <div id="subjectStatsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
@@ -486,6 +489,127 @@
             <div>
                 <p id="toastTitle" class="font-medium text-gray-900"></p>
                 <p id="toastMessage" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer Settings Modal -->
+    <div id="timerSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-clock text-purple-600 mr-2"></i>Focus Timer Settings
+                    </h3>
+                    <button id="closeTimerSettingsModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="timerSettingsForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Work Duration (minutes)</label>
+                        <input type="number" id="workDuration" min="1" max="120" value="25" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        <p class="text-xs text-gray-500 mt-1">Time for focused work</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Break Duration (minutes)</label>
+                        <input type="number" id="breakDuration" min="1" max="60" value="15" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        <p class="text-xs text-gray-500 mt-1">Rest time between work sessions</p>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Number of Sessions</label>
+                        <input type="number" id="numSessions" min="1" max="10" value="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        <p class="text-xs text-gray-500 mt-1">How many work sessions before a long break</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" id="timerStartBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>Start Timer
+                        </button>
+                        <button type="button" id="timerSettingsCancelBtn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer Display Modal -->
+    <div id="timerDisplayModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-hourglass-half text-purple-600 mr-2"></i>Focus Timer
+                    </h3>
+                    <button id="closeTimerDisplayModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Timer Mode Indicator -->
+                <div class="text-center mb-6">
+                    <span id="timerMode" class="inline-block px-4 py-2 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                        <i class="fas fa-briefcase mr-2"></i>Work Time
+                    </span>
+                </div>
+                
+                <!-- Timer Display -->
+                <div class="text-center mb-6">
+                    <div class="timer-circle mx-auto mb-4">
+                        <svg viewBox="0 0 200 200" class="timer-svg">
+                            <circle class="timer-bg-circle" cx="100" cy="100" r="90" />
+                            <circle id="timerProgress" class="timer-progress-circle" cx="100" cy="100" r="90" />
+                        </svg>
+                        <div class="timer-display">
+                            <span id="timerMinutes">25</span>
+                            <span id="timerSeparator">:</span>
+                            <span id="timerSeconds">00</span>
+                        </div>
+                    </div>
+                    <p id="sessionCounter" class="text-sm text-gray-600">Session 1 of 4</p>
+                </div>
+                
+                <!-- Timer Controls -->
+                <div class="flex justify-center gap-3 mb-4">
+                    <button id="timerPauseBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-pause mr-2"></i>Pause
+                    </button>
+                    <button id="timerResetBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <button id="timerSkipBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-forward mr-2"></i>Skip
+                    </button>
+                </div>
+                
+                <!-- Minimize to Floating Timer Button -->
+                <div class="text-center">
+                    <button id="timerMinimizeBtn" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                        <i class="fas fa-minus-circle mr-1"></i>Minimize to floating timer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Mini Timer -->
+    <div id="floatingTimer" class="fixed bottom-4 right-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl shadow-lg p-4 z-50 hidden cursor-pointer hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-105" onclick="showTimerModal()">
+        <div class="flex items-center space-x-3">
+            <div class="timer-icon-container bg-white/20 rounded-full p-2">
+                <i id="floatingTimerIcon" class="fas fa-briefcase text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <p id="floatingTimerMode" class="text-xs font-bold uppercase tracking-wider opacity-90">Work</p>
+                <p id="floatingTimerDisplay" class="text-2xl font-bold tracking-wider">25:00</p>
+            </div>
+            <div class="flex flex-col space-y-1 ml-2">
+                <button id="floatingTimerPauseBtn" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors" onclick="event.stopPropagation(); toggleTimer()">
+                    <i id="floatingTimerPauseIcon" class="fas fa-pause"></i>
+                </button>
+                <button id="floatingTimerCloseBtn" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors" onclick="event.stopPropagation(); closeFloatingTimer()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
     </div>
