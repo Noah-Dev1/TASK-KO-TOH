@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupNetworkListeners();
     setMinDateTime();
+    initTimer();
 
     showLoadingScreen();
 
@@ -323,6 +324,10 @@ function setupEventListeners() {
     const checkDeadlinesBtn = document.getElementById('checkDeadlinesBtn');
     if (checkDeadlinesBtn) checkDeadlinesBtn.addEventListener('click', checkDeadlines);
 
+    // Timer button
+    const timerBtn = document.getElementById('timerBtn');
+    if (timerBtn) timerBtn.addEventListener('click', openTimerModal);
+
     // Use event delegation for calendar button since it's in the dashboard
     document.addEventListener('click', function(e) {
         if (e.target.closest('#calendarBtn')) openCalendarModal();
@@ -379,20 +384,20 @@ function setupEventListeners() {
 // AUTHENTICATION HANDLERS
 // ==========================================
 
+const LOGIN_ERRORS = {
+    'auth/user-not-found': 'No account found with this email',
+    'auth/wrong-password': 'Incorrect password',
+    'auth/invalid-email': 'Invalid email address',
+    'auth/too-many-requests': 'Too many failed attempts. Please try again later'
+};
+
 async function handleLogin(e) {
     e.preventDefault();
-
-    if (!isOnline) {
-        showToast('error', 'Offline', 'Please check your internet connection');
-        return;
-    }
+    if (!isOnline) return showToast('error', 'Offline', 'Please check your internet connection');
 
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
-
-    const loginBtn = document.getElementById('loginBtn');
-    const loginBtnText = document.getElementById('loginBtnText');
-    const loginSpinner = document.getElementById('loginSpinner');
+    const [loginBtn, loginBtnText, loginSpinner] = ['loginBtn', 'loginBtnText', 'loginSpinner'].map(id => document.getElementById(id));
 
     loginBtn.disabled = true;
     loginBtnText.textContent = 'Signing In...';
@@ -402,25 +407,7 @@ async function handleLogin(e) {
         await auth.signInWithEmailAndPassword(email, password);
         showToast('success', 'Welcome back!', 'Successfully logged in');
     } catch (error) {
-        console.error('Login error:', error);
-        let errorMessage = 'Invalid email or password';
-
-        switch (error.code) {
-            case 'auth/user-not-found':
-                errorMessage = 'No account found with this email';
-                break;
-            case 'auth/wrong-password':
-                errorMessage = 'Incorrect password';
-                break;
-            case 'auth/invalid-email':
-                errorMessage = 'Invalid email address';
-                break;
-            case 'auth/too-many-requests':
-                errorMessage = 'Too many failed attempts. Please try again later';
-                break;
-        }
-
-        showToast('error', 'Login Failed', errorMessage);
+        showToast('error', 'Login Failed', LOGIN_ERRORS[error.code] || 'Invalid email or password');
     } finally {
         loginBtn.disabled = false;
         loginBtnText.textContent = 'Sign In';
@@ -498,19 +485,7 @@ if (name.length < 2) {
         console.error('Registration error:', error);
         let errorMessage = 'Failed to create account';
 
-        switch (error.code) {
-            case 'auth/email-already-in-use':
-                errorMessage = 'Email already registered';
-                break;
-            case 'auth/invalid-email':
-                errorMessage = 'Invalid email address';
-                break;
-            case 'auth/weak-password':
-                errorMessage = 'Password is too weak';
-                break;
-        }
-
-        showToast('error', 'Registration Failed', errorMessage);
+        showToast('error', 'Registration Failed', REGISTER_ERRORS[error.code] || 'Failed to create account');
     } finally {
         registerBtn.disabled = false;
         registerBtnText.textContent = 'Create Account';
@@ -1122,7 +1097,7 @@ function renderCalendar() {
 
     // Update month/year header
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                       'July', 'August', 'September', 'October', 'November', 'December'];
+                    'July', 'August', 'September', 'October', 'November', 'December'];
     calendarMonthYear.textContent = `${monthNames[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}`;
 
     // Clear previous calendar
@@ -1189,7 +1164,7 @@ function renderCalendar() {
 }
 
 function getTasksForDate(date) {
-    // Use local date to avoid timezone issues (UTC conversion was causing date shifts)
+    // Use local date to avoid timezone issues
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -2226,6 +2201,370 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     showToast('error', 'Something went wrong', 'Please refresh the page and try again');
 });
+
+// ==========================================
+// TIMER FEATURE (Pomodoro-style)
+// ==========================================
+
+// Timer state
+let timerState = {
+    workDuration: 25, // minutes
+    breakDuration: 15, // minutes
+    totalSessions: 4,
+    currentSession: 1,
+    timeRemaining: 25 * 60, // seconds
+    isRunning: false,
+    isWorkMode: true, // true = work, false = break
+    timerInterval: null
+};
+
+// Initialize timer
+function initTimer() {
+    // Create timer button in dashboard if not exists
+    addTimerButtonToDashboard();
+    
+    // Create timer modal HTML if not exists
+    createTimerModal();
+    
+    // Create floating timer HTML if not exists
+    createFloatingTimer();
+    
+    console.log('Timer initialized');
+}
+
+// Add timer button to dashboard
+function addTimerButtonToDashboard() {
+    const dashboardControls = document.querySelector('.flex.flex-wrap.gap-2, .gap-2.flex');
+    if (dashboardControls && !document.getElementById('timerBtn')) {
+        const timerBtn = document.createElement('button');
+        timerBtn.id = 'timerBtn';
+        timerBtn.className = 'flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors';
+        timerBtn.innerHTML = '<i class="fas fa-clock mr-2"></i>Timer';
+        timerBtn.onclick = openTimerModal;
+        dashboardControls.appendChild(timerBtn);
+    }
+}
+
+// Create timer modal HTML
+function createTimerModal() {
+    if (document.getElementById('timerModal')) return;
+    
+    const modal = document.createElement('div');
+    modal.id = 'timerModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">
+                    <i class="fas fa-clock text-indigo-600 mr-2"></i>Focus Timer
+                </h3>
+                <button onclick="closeTimerModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Timer Settings (shown when timer not running) -->
+            <div id="timerSettings">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Duration (minutes)</label>
+                        <input type="number" id="workDurationInput" value="25" min="1" max="120" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Break Duration (minutes)</label>
+                        <input type="number" id="breakDurationInput" value="15" min="1" max="60"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Sessions</label>
+                        <input type="number" id="totalSessionsInput" value="4" min="1" max="10"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+                <button onclick="startTimer()" 
+                    class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                    <i class="fas fa-play mr-2"></i>Start Timer
+                </button>
+            </div>
+            
+            <!-- Timer Display (shown when timer running) -->
+            <div id="timerDisplay" class="hidden text-center">
+                <div class="mb-6">
+                    <p id="timerMode" class="text-lg font-medium text-indigo-600 mb-2">Work Session</p>
+                    <p id="timerSession" class="text-sm text-gray-500 mb-4">Session 1 of 4</p>
+                    <div class="text-6xl font-bold text-gray-900 mb-6" id="timerDisplayText">
+                        25:00
+                    </div>
+                </div>
+                <div class="flex justify-center gap-3">
+                    <button onclick="toggleTimer()" id="timerPlayPauseBtn"
+                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button onclick="resetTimer()"
+                        class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button onclick="skipToNext()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Create floating timer HTML
+function createFloatingTimer() {
+    if (document.getElementById('floatingTimer')) return;
+    
+    const floating = document.createElement('div');
+    floating.id = 'floatingTimer';
+    floating.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white rounded-full shadow-lg p-3 cursor-pointer z-40 hidden';
+    floating.onclick = showTimerModal;
+    floating.innerHTML = `
+        <div class="flex items-center gap-2">
+            <i class="fas fa-clock"></i>
+            <span id="floatingTimerDisplay">25:00</span>
+        </div>
+    `;
+    document.body.appendChild(floating);
+}
+
+// Open timer modal
+function openTimerModal() {
+    const modal = document.getElementById('timerModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Close timer modal (minimize to floating timer)
+function closeTimerModal() {
+    const modal = document.getElementById('timerModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Show floating timer if timer is running
+    if (timerState.isRunning) {
+        const floating = document.getElementById('floatingTimer');
+        if (floating) {
+            floating.classList.remove('hidden');
+        }
+    }
+}
+
+// Close floating timer completely
+function closeFloatingTimer() {
+    const floating = document.getElementById('floatingTimer');
+    if (floating) {
+        floating.classList.add('hidden');
+    }
+    // Stop the timer as well
+    if (timerState.timerInterval) {
+        clearInterval(timerState.timerInterval);
+    }
+    timerState.isRunning = false;
+    showToast('info', 'Timer Stopped', 'Your focus session has been stopped');
+}
+
+// Show timer modal from floating timer
+function showTimerModal() {
+    const floating = document.getElementById('floatingTimer');
+    if (floating) {
+        floating.classList.add('hidden');
+    }
+    openTimerModal();
+}
+
+// Start timer with settings
+function startTimer() {
+    timerState.workDuration = parseInt(document.getElementById('workDurationInput').value) || 25;
+    timerState.breakDuration = parseInt(document.getElementById('breakDurationInput').value) || 15;
+    timerState.totalSessions = parseInt(document.getElementById('totalSessionsInput').value) || 4;
+    timerState.currentSession = 1;
+    timerState.isWorkMode = true;
+    timerState.timeRemaining = timerState.workDuration * 60;
+    timerState.isRunning = true;
+    
+    // Hide settings, show display
+    document.getElementById('timerSettings').classList.add('hidden');
+    document.getElementById('timerDisplay').classList.remove('hidden');
+    
+    // Hide floating timer initially
+    const floating = document.getElementById('floatingTimer');
+    if (floating) {
+        floating.classList.add('hidden');
+    }
+    
+    updateTimerDisplay();
+    runTimer();
+}
+
+// Run the timer countdown
+function runTimer() {
+    if (timerState.timerInterval) {
+        clearInterval(timerState.timerInterval);
+    }
+    
+    timerState.timerInterval = setInterval(() => {
+        if (timerState.timeRemaining > 0) {
+            timerState.timeRemaining--;
+            updateTimerDisplay();
+        } else {
+            // Timer finished
+            onTimerComplete();
+        }
+    }, 1000);
+}
+
+// Update timer display
+function updateTimerDisplay() {
+    const minutes = Math.floor(timerState.timeRemaining / 60);
+    const seconds = timerState.timeRemaining % 60;
+    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Update main display
+    const display = document.getElementById('timerDisplayText');
+    if (display) display.textContent = timeStr;
+    
+    // Update floating display
+    const floating = document.getElementById('floatingTimerDisplay');
+    if (floating) floating.textContent = timeStr;
+    
+    // Update mode display
+    const mode = document.getElementById('timerMode');
+    if (mode) {
+        mode.textContent = timerState.isWorkMode ? 'Work Session' : 'Break Time';
+        mode.className = timerState.isWorkMode ? 'text-lg font-medium text-indigo-600 mb-2' : 'text-lg font-medium text-green-600 mb-2';
+    }
+    
+    // Update session display
+    const session = document.getElementById('timerSession');
+    if (session) {
+        if (timerState.isWorkMode) {
+            session.textContent = `Session ${timerState.currentSession} of ${timerState.totalSessions}`;
+        } else {
+            session.textContent = 'Break time!';
+        }
+    }
+}
+
+// Toggle timer play/pause
+function toggleTimer() {
+    timerState.isRunning = !timerState.isRunning;
+    
+    const btn = document.getElementById('timerPlayPauseBtn');
+    if (btn) {
+        btn.innerHTML = timerState.isRunning ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
+    
+    // Also update the floating timer icon
+    const floatingIcon = document.getElementById('floatingTimerPauseIcon');
+    if (floatingIcon) {
+        floatingIcon.className = timerState.isRunning ? 'fas fa-pause' : 'fas fa-play';
+    }
+    
+    if (timerState.isRunning) {
+        runTimer();
+    } else {
+        if (timerState.timerInterval) {
+            clearInterval(timerState.timerInterval);
+        }
+    }
+}
+
+// Reset timer
+function resetTimer() {
+    if (timerState.timerInterval) {
+        clearInterval(timerState.timerInterval);
+    }
+    
+    timerState.isRunning = false;
+    timerState.currentSession = 1;
+    timerState.isWorkMode = true;
+    timerState.timeRemaining = timerState.workDuration * 60;
+    
+    // Show settings, hide display
+    document.getElementById('timerSettings').classList.remove('hidden');
+    document.getElementById('timerDisplay').classList.add('hidden');
+    
+    // Hide floating timer
+    const floating = document.getElementById('floatingTimer');
+    if (floating) {
+        floating.classList.add('hidden');
+    }
+    
+    updateTimerDisplay();
+}
+
+// Skip to next session/break
+function skipToNext() {
+    onTimerComplete();
+}
+
+// Handle timer completion
+function onTimerComplete() {
+    // Play notification sound
+    playTimerSound();
+    
+    if (timerState.isWorkMode) {
+        // Work session completed, switch to break
+        showToast('info', 'Work Session Complete!', 'Time for a break!');
+        
+        if (timerState.currentSession < timerState.totalSessions) {
+            timerState.isWorkMode = false;
+            timerState.timeRemaining = timerState.breakDuration * 60;
+        } else {
+            // All sessions completed
+            showToast('success', 'All Sessions Complete!', 'Great job! You completed all focus sessions.');
+            resetTimer();
+            return;
+        }
+    } else {
+        // Break completed, switch to work
+        showToast('info', 'Break Over!', 'Time to get back to work!');
+        timerState.isWorkMode = true;
+        timerState.currentSession++;
+        timerState.timeRemaining = timerState.workDuration * 60;
+    }
+    
+    updateTimerDisplay();
+    
+    if (timerState.isRunning) {
+        runTimer();
+    }
+}
+
+// Play timer notification sound
+function playTimerSound() {
+    try {
+        // Create a simple beep sound
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (e) {
+        console.log('Audio play failed:', e);
+    }
+}
+
 function escapeHtml(unsafe) {
     if (unsafe === null || unsafe === undefined) return '';
     return String(unsafe)
